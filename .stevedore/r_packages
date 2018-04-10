@@ -1,2 +1,2 @@
 tidyverse plyr dplyr ggplot2 scales RColorBrewer shiny DT shinythemes lubridate lettercase leaflet stringr  sf  tidycensus 
-tigris  maps plotly shinythemes rgbif DT ggthemes 
+tigris  maps plotly shinythemes DT ggthemes 
