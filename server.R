@@ -1,14 +1,23 @@
-#
-# This is the server logic of a Shiny web application. You can run the 
-# application by clicking 'Run App' above.
-#
-# Find out more about building applications with Shiny here:
-# 
-#    http://shiny.rstudio.com/
-#
-#connect to online
 
-library(shiny)
+#This is the server side of the Shiny app- so when a user clicks
+    #on a tab, or selects a button, this script says how it reacts
+
+#Sections:
+  #1. load .rdata
+  #2. Create the server file
+        #2a. Prep the data (TXIndus) so that it is filtered by the date selected by user
+              #I have marked this out for now. It just reads in the file w/o filtering by date
+      
+        #Start writing script for each tab
+        #2b. Make a Graph of the data for the Historical Trends tab
+        #2c. Make map of Texas by water usage using leaflet
+        #2d. Make Table of largest Water users
+        #2d. Write a few line for summary tab
+        #2e. Write Credits for the Credits tab
+
+#1. Load data .Rdatafile?----
+  #load(".RData")
+
 library("tidyverse")
 library(plyr)
 library(dplyr)
@@ -28,49 +37,1118 @@ library("tigris")
 library("maps")
 library("plotly")
 library("rsconnect")
-library(shinythemes)
 
-#Load Necessary Data-----
-  #Texas
-  TXIndusall<- read.csv("yearlyTXshort4.csv")
-  TXIndusall<- subset(TXIndusall,TXIndusall$Year>1970)
-  
-  
-  #IN
-  monthlyIN<- read.csv("IN_updated3.csv")  
-  INFips<- read.csv("INCountyFIPS.csv")
-  monthlyIN$DateProper<-as.Date(as.character(monthlyIN$Date), "%m/%d/%Y")  
-  
-  #NC
-  NC<- read.csv("monthlyNCshort.csv")
-  NC$Date<-as.Date(as.character(NC$Date), "%m/%d/%Y")  
-  
-  #
-  usgs<- read.csv("usgs.csv")
+load(".RData")
 
 
+
+
+
+#data prep
+#setwd("Z:/Working3_18/Working3_18")
+
+#data prep-----
+    #Texas
+    TXIndusall<- read.csv("yearlyTXshort4.csv")
+    TXIndusall<- subset(TXIndusall,TXIndusall$Year>1970)
+
+    
+    #IN
+    monthlyIN<- read.csv("IN_updated3.csv")  
+    INFips<- read.csv("INCountyFIPS.csv")
+    monthlyIN$DateProper<-as.Date(as.character(monthlyIN$Date), "%m/%d/%Y")  
+    
+    #NC
+    NC<- read.csv("monthlyNCshort.csv")
+    NC$Date<-as.Date(as.character(NC$Date), "%m/%d/%Y")  
+    
+    #
+    usgs<- read.csv("usgs.csv")
+
+    
 #2. Server Script ------
-shinyServer(function(input,output,session) { #server is defined within these parentheses
-  
-  #3. We set the data source and make it change with the date! ------ prep data once and then pass around the program----
-  
-  passData<- reactive({
-    if(input$state == "Texas"){
-      data <- filter(TXIndusall, TXIndusall$Year >= input$dateRange[1] &
-                       Year <= input$dateRange[2])
+  shinyServer(function(input,output,session) { #server is defined within these parentheses
+    
+#3. Make the date interactive
+      #We set the data source and make it change with the date!
+
+     passData<- reactive({
+       if(input$state == "Texas"){
+        data <- filter(TXIndusall, TXIndusall$Year >= input$dateRange[1] &
+                         Year <= input$dateRange[2])
+
+       }
+       if(input$state == "Indiana"){
+        data <- filter(monthlyIN, monthlyIN$Year >= input$dateRange1[1] &
+                             monthlyIN$Year <= input$dateRange1[2])
+       
+        }
+       if(input$state == "NorthCarolina"){
+         data <- filter(NC, NC$Year >= input$dateRange2[1] &
+                         NC$Year <= input$dateRange2[2])
+         
+       }
+       return(data)
+     })
+     
+#3.Spatial Trends: Map trends tab Water use
+     #I used a leaflet to create the cholorpleth. 
+          #I first followed https://juliasilge.com/blog/using-tidycensus/
+          #but then I saved the actual file so the code wouldn't have to keep downloading the file from online
+     
+     observe(if(input$state == "Texas" & input$FacWater == "wateruse"){
+       output$Map<- renderLeaflet({
+         #get data ready
+         Mapdata<- passData()%>%
+           dplyr::group_by(FIPS ) %>%
+           dplyr::summarise("Water Use (MG)" = 
+                              sum(monthlyWaterUseMG, na.rm = TRUE ))
+         
+         #change column names of Mapdata file to FIPS
+         names(Mapdata)[1] <- paste("FIPS")
+         as.character(Mapdata$FIPS)
+
+         #pull Texas ACS data the shapefile
+         TXshape <- read_sf("TX.shp")
+         
+         #Create a new column named 'FIPS'
+         TXshape$FIPS <- as.integer(TXshape$GEOID)
+         
+         
+         #merge water usage data with this data
+         mapmergeTX<- geo_join(TXshape, Mapdata, "FIPS", "FIPS", how = "left") 
+         mapmergeTX$log<- log10(mapmergeTX$`Water Use (MG)`)
+         
+         #make map color palette
+         pal <- colorNumeric(palette = "viridis", domain = mapmergeTX$log)
+         
+         #Create the leaflet!
+         TXshape %>%
+           st_transform(crs = "+init=epsg:4326") %>%
+           leaflet(width = "100%") %>%
+           addProviderTiles(provider = "CartoDB.Positron") %>%
+           addPolygons(popup = ~ str_extract(NAME, "^([^,]*)"),
+                       stroke = FALSE,
+                       smoothFactor = 0,
+                       fillOpacity = 0.7,
+                       color = ~ pal(mapmergeTX$log)) %>%
+           addLegend("bottomright", 
+                     pal = pal, 
+                     values = ~ mapmergeTX$log,
+                     title = "Log of Water Use (MG)",
+                     opacity = 1) 
+       })
+     }) 
+     observe(if(input$state == "Indiana"  & input$FacWater == "wateruse"){
+       output$Map<- renderLeaflet({
+         #get data ready
+         Mapdata<- passData() %>%
+           dplyr::group_by(FIPS) %>%
+           dplyr::summarise("Water Use (MG)" = 
+                              sum(monthlyWaterUseMG, na.rm = TRUE ))
+         
+         #Load in the shapefile
+         INshape <- read_sf("IN.shp")
+         
+         #change the name of the GEOID to fIPS and make it an integer
+         INshape$FIPS <- as.integer(INshape$GEOID)
+         
+         #merge water usage data with this data
+         mapmergeIN<- geo_join(INshape, Mapdata, "FIPS", "FIPS", how = "left") 
+         
+         
+         #make map color palette
+         bins<- c(0,500,1000,3000,5000,7000,10000,15000,20000,25000)
+         pal <- colorBin(palette = "viridis", domain = mapmergeIN$'Water Use (MG)', bin=bins)
+         
+         #make leaflet map
+         INshape %>%
+           st_transform(crs = "+init=epsg:4326") %>%
+           leaflet(width = "100%") %>%
+           addProviderTiles(provider = "CartoDB.Positron") %>%
+           addPolygons(popup = ~ str_extract(NAME, "^([^,]*)"),
+                       stroke = FALSE,
+                       smoothFactor = 0,
+                       fillOpacity = 0.7,
+                       color = ~ pal(mapmergeIN$`Water Use (MG)`)) %>%
+           addLegend("bottomright", 
+                     pal = pal, 
+                     values = ~ mapmergeIN$`Water Use (MG)`,
+                     title = "Water Use (MG)",
+                     opacity = 1)  
+         
+       })     
+     })
+     observe(if(input$state == "NorthCarolina" & input$FacWater == "wateruse"){  
+       output$Map<- renderLeaflet({
+         
+         #get data ready
+         Mapdata<-passData()%>%
+           dplyr::group_by(County ) %>%
+           dplyr::summarise("Water Use (MG)" = 
+                              sum(monthlyWaterUseMG, na.rm = TRUE ))
+         Mapdata$County<- toupper(Mapdata$County)
+         Mapdata$County <- as.character(Mapdata$County)
+
+         
+         #pull NorthCarolina shapefile
+         NCshape <- read_sf("NC.shp")
+         
+         #the county names are written like "XXX county", so place the county name in new column
+         NCshape$County<- word(NCshape$NAME, 1)
+         NCshape$County<- toupper(NCshape$County)
+
+         
+         #merge water usage data with this data
+         mapmergeNC<- geo_join(NCshape, Mapdata, "County", "County", how = "left") 
+         
+         
+         #make map color palette
+         pal <- colorNumeric(palette = "viridis", domain = mapmergeNC$'Water Use (MG)')
+         
+         #make leaflet!
+         NCshape %>%
+           st_transform(crs = "+init=epsg:4326") %>%
+           leaflet(width = "100%") %>%
+           addProviderTiles(provider = "CartoDB.Positron") %>%
+           addPolygons(popup = ~ str_extract(NAME, "^([^,]*)"),
+                       stroke = FALSE,
+                       smoothFactor = 0,
+                       fillOpacity = 0.7,
+                       color = ~ pal(mapmergeNC$`Water Use (MG)`)) %>%
+           addLegend("bottomright", 
+                     pal = pal, 
+                     values = ~ mapmergeNC$`Water Use (MG)`,
+                     title = "Water Use (MG)",
+                     opacity = 1)  
+         
+       })    
+     })
+
+##3a Spatial Trends: Map of Facility Number
+     observe(if(input$state == "Texas"& input$FacWater == "facilities"){
+       output$Map <- renderLeaflet({
+         
+         #get data ready
+         Mapdata<- passData() %>%
+           dplyr::count(FIPS, Organization, Year) %>%
+           dplyr::count(Organization, FIPS) %>% 
+           dplyr::group_by(FIPS) %>% 
+           dplyr::summarise(Facility = n_distinct(Organization))
+
+         #change column names of Mapdata file
+         names(Mapdata)[1] <- paste("FIPS")
+         as.character(Mapdata$FIPS)
+         
+         #pull shapefile
+         TXshape <- read_sf("TX.shp")
+
+         #create a new column called FIPS
+         TXshape$FIPS <- as.integer(TXshape$GEOID)
+
+
+         #merge the number of facilites with the shapefile
+         mapmergeTX<- geo_join(TXshape, Mapdata, "FIPS", "FIPS", how = "left") 
+         mapmergeTX$log<- log10(as.numeric(mapmergeTX$Facility))
+         
+         #make map color palette
+         pal <- colorNumeric(palette = "viridis", domain = mapmergeTX$log)
+         
+         #make a leaflet map of facilites
+         TXshape %>%
+           st_transform(crs = "+init=epsg:4326") %>%
+           leaflet(width = "100%") %>%
+           addProviderTiles(provider = "CartoDB.Positron") %>%
+           addPolygons(popup = ~ str_extract(NAME, "^([^,]*)"),
+                       stroke = FALSE,
+                       smoothFactor = 0,
+                       fillOpacity = 0.7,
+                       color = ~ pal(mapmergeTX$log)) %>%
+           addLegend("bottomright", 
+                     pal = pal, 
+                     values = ~ mapmergeTX$log,
+                     title = "Log (Number of Facilities)",
+                     opacity = 1) 
+       })
+     }) 
+     observe(if(input$state == "NorthCarolina" & input$FacWater == "facilities"){  
+       output$Map<- renderLeaflet({
+         
+         #get data ready
+         Mapdata<-passData() %>%
+           dplyr::count(County, FacilityName, Year) %>%
+           dplyr::count(County, FacilityName) %>% 
+           dplyr::group_by(County) %>% 
+           dplyr::summarise(Facility = n_distinct(FacilityName))
+         
+         
+        #capitalize the county names
+         Mapdata$County<- toupper(Mapdata$County)
+         
+         #pull NorthCarolina shapefile
+         NCshape <- read_sf("NC.shp")
+         
+         #the county names are written like "XXX county", so place the county name in new column
+         NCshape$County<- word(NCshape$NAME, 1)
+         NCshape$County<- toupper(NCshape$County)
+         
+         
+         #merge water usage data with this data
+         mapmergeNC<- geo_join(NCshape, Mapdata, "County", "County", how = "left") 
+         
+         
+         #make map color palette
+         pal <- colorNumeric(palette = "viridis", domain = mapmergeNC$Facility)
+        
+         #make a leaflet map of facilites 
+         NCshape %>%
+           st_transform(crs = "+init=epsg:4326") %>%
+           leaflet(width = "100%") %>%
+           addProviderTiles(provider = "CartoDB.Positron") %>%
+           addPolygons(popup = ~ str_extract(NAME, "^([^,]*)"),
+                       stroke = FALSE,
+                       smoothFactor = 0,
+                       fillOpacity = 0.7,
+                       color = ~ pal(mapmergeNC$Facility)) %>%
+           addLegend("bottomright", 
+                     pal = pal, 
+                     values = ~ mapmergeNC$Facility,
+                     title = "Number of Facilities",
+                     opacity = 1)  
+         
+       })    
+     })
+     observe(if(input$state == "Indiana"  & input$FacWater == "facilities"){
+       output$Map<- renderLeaflet({
+         #get data ready
+         Mapdata<- passData() %>%
+           dplyr::count(FIPS, Facility, Year) %>%
+           dplyr::count(FIPS, Facility) %>% 
+           dplyr::group_by(FIPS) %>% 
+           dplyr::summarise(Facility = n_distinct(Facility))
+         
+        
+         #pull shapefiles
+         INshape <- read_sf("IN.shp")
+         
+         #change the name of the GEOID to fIPS and make it an integer
+         INshape$FIPS <- as.integer(INshape$GEOID)
+         
+         #merge water usage data with this data
+         mapmergeIN<- geo_join(INshape, Mapdata, "FIPS", "FIPS", how = "left") 
+         
+         
+         #make map color palette
+         pal <- colorNumeric(palette = "viridis", domain = mapmergeIN$Facility)
+         
+         #make a leaflet map of facilites
+         INshape %>%
+           st_transform(crs = "+init=epsg:4326") %>%
+           leaflet(width = "100%") %>%
+           addProviderTiles(provider = "CartoDB.Positron") %>%
+           addPolygons(popup = ~ str_extract(NAME, "^([^,]*)"),
+                       stroke = FALSE,
+                       smoothFactor = 0,
+                       fillOpacity = 0.7,
+                       color = ~ pal(mapmergeIN$Facility)) %>%
+           addLegend("bottomright", 
+                     pal = pal, 
+                     values = ~ mapmergeIN$Facility,
+                     title = "Number of Facilities",
+                     opacity = 1)  
+         
+       })     
+     })
+     
+     
+#4. summary tabs/ info in text boxes 
+     observe(if(input$state== "Indiana" |input$state== "NorthCarolina"| input$state== "Texas" ){
+     output$Summary<- renderText({
+       paste0("Key facts in this time period:")})
+     })
+     observe(if(input$state== "Indiana"){
+     output$Summary1<- renderText({
+       
+       #Percent Surface Water  ----
+       GroupSource<- passData() %>%
+         dplyr::group_by(SourceCode)%>%
+         dplyr::summarise("TotalWaterUseMG" = sum(monthlyWaterUseMG)) %>%
+         dplyr:: mutate(Percent = round(TotalWaterUseMG/ sum(TotalWaterUseMG)*100))
+       paste0("Key facts:")
+       TextWater<- paste0("Surface Water Use:")
+       TextWater2<- paste0(" ", GroupSource$Percent[GroupSource$SourceCode =="Surface Water"], "%")
+       paste0(TextWater, TextWater2)
+     })
+     
+     output$Summary2<- renderText({
+       
       
-    }
-    if(input$state == "Indiana"){
-      data <- filter(monthlyIN, monthlyIN$Year >= input$dateRange1[1] &
-                       monthlyIN$Year <= input$dateRange1[2])
-      
-    }
-    if(input$state == "NorthCarolina"){
-      data <- filter(NC, NC$Year >= input$dateRange2[1] &
-                       NC$Year <= input$dateRange2[2])
-      
-    }
-    return(data)
+       
+       #organization company use
+       groupUsers<- passData()%>%
+         dplyr::group_by(Facility)%>%
+         dplyr::summarise('Total Water Usage (MG)'=  
+                            as.numeric(round(sum(monthlyWaterUseMG))))
+       sortedUsers<- arrange(groupUsers, desc(groupUsers$`Total Water Usage (MG)`))
+       
+       
+       TextUser<-paste0("Largest water user: ")
+       extraline<- "                   "
+       textuser2<- paste0(head(sortedUsers$Facility, 1),".")
+       
+       paste(TextUser,extraline, textuser2)
+       
+       
+     })
+     output$Summary3<- renderText({
+       
+       #Percent Surface Water  ----
+       GroupSource<- passData() %>%
+         dplyr::group_by(SourceCode)%>%
+         dplyr::summarise("TotalWaterUseMG" = sum(monthlyWaterUseMG)) %>%
+         dplyr:: mutate(Percent = round(TotalWaterUseMG/ sum(TotalWaterUseMG)*100))
+       paste0("Key facts:")
+       TextWater<- paste0("Groundwater accounts for", " ", GroupSource$Percent[GroupSource$SourceCode =="Groundwater"], "%",
+                          " of the total water used in this time period.")
+       
+       #organization company use
+       groupUsers<- passData()%>%
+         dplyr::group_by(Facility)%>%
+         dplyr::summarise('Total Water Usage (MG)'=  
+                            as.numeric(round(sum(monthlyWaterUseMG))))
+       sortedUsers<- arrange(groupUsers, desc(groupUsers$`Total Water Usage (MG)`))
+       
+       
+       TextUser<-paste0(" They have used ", format(head(sortedUsers$`Total Water Usage (MG)`, 1),big.mark = ","), 
+                        " MG.")
+       
+       paste0(TextUser, collapse = "\n")
+       
+       
+     })
   })
+     observe(if (input$state == "Texas"){
+     output$Summary1<- renderText({
+       
+       #Percent Surface Water  ----
+       GroupPurSS<- passData() %>%
+         dplyr::group_by(PurchasedSS)%>%
+         dplyr::summarise("TotalWaterUseMG" = sum(monthlyWaterUseMG, na.rm = TRUE)) %>%
+         dplyr:: mutate(Percent = round(TotalWaterUseMG/ sum(TotalWaterUseMG)*100))
+       paste0("Key facts:")
+       TextWater<- paste0("Surface water use: ", GroupPurSS$Percent[GroupPurSS$PurchasedSS =="SS"], "%")
+       
+         
+       paste0(TextWater)
+      
+       
+     })
+     output$Summary2<- renderText({
+       
+      
+       #Aquifer with the largest withdrawal
+       #group by the aquifer name----
+       GroupBasin<- passData() %>%
+         dplyr::group_by(BasinSource)%>%
+         dplyr::summarise("TotalWaterUseMG" = format(round(as.numeric(sum(monthlyWaterUseMG))), big.mark = ","))
+       colnames(GroupBasin)[1]<- "Basin"
+       GroupBasin$Basin <-str_ucfirst(as.character(GroupBasin$Basin))
+       TextAquifer<- paste0(" The aquifier with the most groundwater withdrawal: ", str_ucfirst(head(GroupBasin$Basin, 1)),".")
+       
+         
+       paste0(TextAquifer)
+       
+       
+     })
+     output$Summary3<- renderText({
+       
+          
+       #organization company use
+       groupUsers<- passData()%>%
+         dplyr::group_by(Organization, Description)%>%
+         dplyr::summarise('Total Water Usage (MG)'=  
+                            as.numeric(round(sum(monthlyWaterUseMG))))
+       sortedUsers<- arrange(groupUsers, desc(groupUsers$`Total Water Usage (MG)`))
+       TextUser<-paste0("Largest water user:", "\n", head(sortedUsers$Organization, 1),", which specializes in ", 
+                        head(sortedUsers$Description, 1, ".", "They have used a total of ", head(sortedUsers$`Total Water Usage (MG)`, 1), "MG"))
+       
+       paste0(TextUser)
+       
+       
+     })
   })
+     observe(if(input$state== "NorthCarolina"){
+       output$Summary1<- renderText({
+         
+         #Get Data ----
+         GroupSource<- passData()%>%
+           dplyr::group_by(NewWaterType)%>%
+           dplyr::summarise("TotalWaterUseMG" = sum(monthlyWaterUseMG)) %>%
+           dplyr:: mutate(Percent = round(TotalWaterUseMG/ sum(TotalWaterUseMG)*100))
+         
+         groupUsers<- passData()%>%
+           dplyr::group_by(FacilityName, NewSubType)%>%
+           dplyr::summarise('Total Water Usage (MG)'=  
+                              as.numeric(round(sum(monthlyWaterUseMG))))
+         sortedUsers<- arrange(groupUsers, desc(groupUsers$`Total Water Usage (MG)`))
+         colnames(sortedUsers)[1]<- "Facility Name"
+         colnames(sortedUsers)[2]<- "Facility Description"
+            
+        #Text
+           TextWater1<- paste0("Groundwater Use: ", GroupSource$Percent[GroupSource$NewWaterType =="Groundwater"], "%",
+                              " ", "Surface water use: ", GroupSource$Percent[GroupSource$NewWaterType =="Surface Water"],
+                              "%.")
+           TextWater<- paste0("Surface water use: ", GroupSource$Percent[GroupSource$NewWaterType =="Surface Water"],
+                               "%.")
   
+           paste(TextWater1)
+           paste0(TextWater)
+         
+         
+       })
+       output$Summary2<- renderText({
+         
+         #Get Data ----
+         GroupSource<- passData()%>%
+           dplyr::group_by(NewWaterType)%>%
+           dplyr::summarise("TotalWaterUseMG" = sum(monthlyWaterUseMG)) %>%
+           dplyr:: mutate(Percent = round(TotalWaterUseMG/ sum(TotalWaterUseMG)*100))
+         
+         groupUsers<- passData()%>%
+           dplyr::group_by(FacilityName, NewSubType)%>%
+           dplyr::summarise('Total Water Usage (MG)'=  
+                              as.numeric(round(sum(monthlyWaterUseMG))))
+         sortedUsers<- arrange(groupUsers, desc(groupUsers$`Total Water Usage (MG)`))
+         colnames(sortedUsers)[1]<- "Facility Name"
+         colnames(sortedUsers)[2]<- "Facility Description"
+         
+         #Text
+         TextWater<- paste0("Groundwater and surface water account for ", GroupSource$Percent[GroupSource$NewWaterType =="Groundwater"], "%",
+                            " and ", GroupSource$Percent[GroupSource$NewWaterType =="Surface Water"],
+                            "%"," of the total water used in this time period respectively.")
+         
+         TextUser<- paste0("Largest user: ", head(sortedUsers$`Facility Name`, 1),
+                           ", which specializes in ", head(sortedUsers$'Facility Description', 1), ".")
+         
+         paste0(TextUser)
+         
+         
+       })
+       output$Summary3<- renderText({
+         
+         #Get Data ----
+         GroupSource<- passData()%>%
+           dplyr::group_by(NewWaterType)%>%
+           dplyr::summarise("TotalWaterUseMG" = sum(monthlyWaterUseMG)) %>%
+           dplyr:: mutate(Percent = round(TotalWaterUseMG/ sum(TotalWaterUseMG)*100))
+         
+         groupUsers<- passData()%>%
+           dplyr::group_by(FacilityName, NewSubType)%>%
+           dplyr::summarise('Total Water Usage (MG)'=  
+                              as.numeric(round(sum(monthlyWaterUseMG))))
+         sortedUsers<- arrange(groupUsers, desc(groupUsers$`Total Water Usage (MG)`))
+         colnames(sortedUsers)[1]<- "Facility Name"
+         colnames(sortedUsers)[2]<- "Facility Description"
+         
+         #Text
+         TextWater<- paste0("Groundwater and surface water account for ", GroupSource$Percent[GroupSource$NewWaterType =="Groundwater"], "%",
+                            " and ", GroupSource$Percent[GroupSource$NewWaterType =="Surface Water"],
+                            "%"," of the total water used in this time period respectively.")
+         
+         TextUser<- paste0("Their water use:", format(head(sortedUsers$`Total Water Usage (MG)`, 1),big.mark = ","),
+                           " MG")
+         
+         paste0(TextUser)
+         
+         
+       })
+     })
+
+     
+#5 largest Users (table)------
+     observe(if(input$state== "Texas" & input$tablePie =="Table"){
+
+       output$LargestUsers<- DT::renderDataTable({
+         
+        #get the data grouped
+         groupUsers<- passData()%>%
+           dplyr::group_by(Organization, Description)%>%
+           dplyr::summarise('Total Water Usage (MG)'=  
+                              as.numeric(round(sum(monthlyWaterUseMG))))
+         sortedUsers<- arrange(groupUsers, desc(groupUsers$`Total Water Usage (MG)`))
+         datatable(sortedUsers)%>%
+           formatCurrency(columns="Total Water Usage (MG)", currency= "", mark= ",", digits=0 )
+       })
+     })
+     observe(if (input$state == "Indiana") {
+       output$LargestUsers<- DT::renderDataTable({
+         #get the data grouped
+         groupUsers<- passData()%>%
+           dplyr::group_by(Facility)%>%
+           dplyr::summarise('Total Water Usage (MG)'=  
+                              as.numeric(round(sum(monthlyWaterUseMG))))
+         sortedUsers<- arrange(groupUsers, desc(groupUsers$`Total Water Usage (MG)`))
+         datatable(sortedUsers)%>%
+           formatCurrency(columns="Total Water Usage (MG)", currency= "", mark= ",", digits=0 )
+         
+       })
+     })
+     observe(if(input$state== "NorthCarolina"& input$tablePie =="Table"){
+       output$LargestUsers<- DT::renderDataTable({
+         #get the data grouped
+         groupUsers<- passData()%>%
+           dplyr::group_by(FacilityName, NewSubType)%>%
+           dplyr::summarise('Total Water Usage (MG)'=  
+                              as.numeric(round(sum(monthlyWaterUseMG))))
+         sortedUsers<- arrange(groupUsers, desc(groupUsers$`Total Water Usage (MG)`))
+         colnames(sortedUsers)[1]<- "Facility Name"
+         colnames(sortedUsers)[2]<- "Facility Description"
+         datatable(sortedUsers)%>%
+           formatCurrency(columns="Total Water Usage (MG)", currency= "", mark= ",", digits=0 )
+         
+         
+       })
+     })
+     
+###5a largest Users (pie)------
+     observe(if(input$state== "Texas" & input$tablePie =="Pie"){
+       
+       output$Pie <- renderPlotly({
+         #prep data
+         NAICSGROUP<- passData()%>%
+           dplyr::group_by(DescShort) %>%
+           dplyr::summarise(TotalWaterUseMG = sum(monthlyWaterUseMG, na.rm = TRUE )) %>% 
+           dplyr:: mutate(Percent = round(TotalWaterUseMG/ sum(TotalWaterUseMG)*100)) %>% 
+           dplyr::arrange(desc(TotalWaterUseMG))
+         
+         #subset data to the top 5 NAICS groups
+         Piedata<- NAICSGROUP[1:5,]
+         
+         #get the sum of the last 6 NAICS categories
+          #Sum the water use
+           other<- NAICSGROUP %>% 
+             slice(6:n()) %>% 
+             dplyr::summarise(TotalWaterUseMG = sum(TotalWaterUseMG, na.rm = TRUE ))
+         
+           #make new column for percent
+           otherP<- NAICSGROUP %>% 
+             slice(6:n()) %>% 
+             dplyr::summarise(Percent = sum(Percent, na.rm = TRUE ))
+         
+         
+           #make new table that has the row information for the 'other' category
+           Other<- data.frame("Other", other, otherP )
+           colnames(Other)[1]<- "DescShort"
+         
+        #Now combine the table with the top five and addedlast row for 'other'
+         Piedata<-rbind(Piedata, Other)
+         
+
+       #Plot Pie Chart
+         colors <- c('rgb(211,94,96)', 'rgb(128,133,133)', 'rgb(144,103,167)', 'rgb(171,104,87)', 'rgb(114,147,203)')
+         
+         pie<- plot_ly(Piedata, labels = Piedata$DescShort , values = Piedata$Percent, type = 'pie',
+                       textinfo = 'label+percent',
+                       insidetextfont = list(color = '#FFFFFF'),
+                       marker = list(colors = colors,
+                                     line = list(color = '#FFFFFF', width = 1)),
+                       showlegend = TRUE) %>%
+           layout(title = "Total Water Use by NAICS Characterization",
+                  xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+                  yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+         print(pie)
+         
+       })
+     })
+     observe(if(input$state== "NorthCarolina"& input$tablePie =="Pie"){
+       
+       output$Pie <- renderPlotly({ 
+         #Organize data
+         NAICSGroupNC<- passData() %>% 
+           dplyr::group_by(NewSubType) %>%
+           dplyr::summarise(TotalWaterUseMG = sum(monthlyWaterUseMG, na.rm = TRUE )) %>% 
+           dplyr:: mutate(Percent = round(TotalWaterUseMG/ sum(TotalWaterUseMG)*100)) %>% 
+           dplyr::arrange(desc(TotalWaterUseMG))
+
+         # Make plot
+         colors <- c('rgb(211,94,96)', 'rgb(128,133,133)', 'rgb(144,103,167)', 'rgb(171,104,87)', 'rgb(114,147,203)')
+         
+         pie<- plot_ly(NAICSGroupNC, labels = NAICSGroupNC$NewSubType , values = NAICSGroupNC$TotalWaterUseMG, type = 'pie',
+                       textinfo = 'label+percent',
+                       insidetextfont = list(color = '#FFFFFF'),
+                       marker = list(colors = colors,
+                                     line = list(color = '#FFFFFF', width = 1)),
+                       showlegend = TRUE) %>%
+           layout(title = "Total Water Use by NAICS Characterization",
+                  xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+                  yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+         
+         print(pie)
+       })
+     })
+
+
+#6 Temporal Trends: graph of historical trends-----
+     observe(if (input$state == "Indiana"){
+       #Update the radio buttons to reflect the Indiana data
+       updateRadioButtons(session,  "WaterType",
+                          choices = list("All"= "All","Surface Water" = "SurfaceWater", 
+                                         "Groundwater" = "Groundwater"))
+       
+      output$HistoricalTrends <- renderPlot({
+         
+         #Get the data ready to be plotted
+          #Total use
+           graphdata<-passData() %>%
+             dplyr::group_by(Year) %>%
+             dplyr::summarise(monthlyWaterUseMG = sum(monthlyWaterUseMG, na.rm = TRUE ))
+           #Source- Intake (surface water)
+           graphswdata<-passData()[passData()$SourceCode == "Surface Water",]%>%
+             dplyr::group_by(Year) %>%
+             dplyr::summarise(monthlyWaterUseMG = sum(monthlyWaterUseMG, na.rm = TRUE ))
+           #Source- Well (groundwater)
+           graphgwdata<-passData()[passData()$SourceCode == "Groundwater",]%>%
+             dplyr::group_by(Year) %>%
+             dplyr::summarise(monthlyWaterUseMG = sum(monthlyWaterUseMG, na.rm = TRUE ))
+         
+         
+         #Graph of total water usage
+         theGraph <- ggplot(data= graphdata,aes(graphdata$Year,graphdata$monthlyWaterUseMG)) + 
+           geom_line(aes(color="Total Water"), size= 1) +
+           labs(x ="Year", y="\n Industrial Water Use (MG)\n", 
+                title = "\nIndiana Industrial Water Use by Water Type\n") +
+           scale_y_continuous(labels = scales::comma)+#, breaks = seq(0,900000, by =200000))+
+           scale_x_continuous(breaks = seq(1970,2020, by= 5))+
+           theme(axis.text =element_text(size=16), axis.title=element_text(size=20, face= "bold"), 
+                 legend.title = element_text(size = 18, face = "bold"), 
+                 legend.text = element_text(size = 16),
+                 plot.title = element_text(size = 22, face = "bold"))
+         
+
+         if(input$WaterType == "SurfaceWater"){
+           theGraph <- theGraph +
+             geom_line(data= graphswdata, aes(graphswdata$Year,graphswdata$monthlyWaterUseMG, color='Surface Water'),size= 1)+
+             scale_colour_discrete(name="Water Type")
+         }
+         if(input$WaterType == "Groundwater"){
+           theGraph <- theGraph +
+             geom_line(data= graphgwdata, aes(graphgwdata$Year,graphgwdata$monthlyWaterUseMG, color='Groundwater'), size= 1)+
+             scale_colour_discrete(name="Water Type")
+         }
+         if(input$WaterType == ("All" )){ 
+           theGraph <- theGraph+
+             geom_line(data= graphswdata, aes(graphswdata$Year,graphswdata$monthlyWaterUseMG, color='Surface Water'), size= 1) +
+             geom_line(data= graphgwdata, aes(graphgwdata$Year,graphgwdata$monthlyWaterUseMG, color='Groundwater'), size= 1)+
+             scale_colour_discrete(name="Water Type")
+         }
+         #Add a section for if the user checks the checkbox for adding USGS data
+         if(input$WaterType == ("All") & input$USGS == TRUE){ 
+           theGraph <- theGraph+
+             geom_line(data= graphswdata, aes(graphswdata$Year,graphswdata$monthlyWaterUseMG, color='Surface Water'), size= 1) +
+             geom_line(data= graphgwdata, aes(graphgwdata$Year,graphgwdata$monthlyWaterUseMG, color='Groundwater'), size= 1)+
+             geom_line(linetype=2, data= usgs, aes(usgs$Year, usgs$Indiana, color="USGS"), size = 1)+
+             geom_point( data= usgs, aes(usgs$Year, usgs$Indiana, color="USGS"),size= 2.5)+
+             scale_colour_discrete(name="Water Type")
+         }
+
+         print(theGraph)
+       })
+     }) 
+     observe(if(input$state == "Texas"){
+       #update radio buttons to reflect Texas data
+       updateRadioButtons(session,  "WaterType",
+                          choices = list("All"= "All",
+                                         "Surface Water" = "SurfaceWater", 
+                                         "Groundwater" = "Groundwater",
+                                         "Reuse Water"= "Reuse"))
+       
+       output$HistoricalTrends <- renderPlot({
+         #Get the data ready to be plotted!!------
+         graphdata<-passData() %>%
+           dplyr::group_by(Year) %>%
+           dplyr::summarise(monthlyWaterUseMG = sum(monthlyWaterUseMG, na.rm = TRUE ))
+         #Groundwater
+         graphGWdata<-passData()[passData()$WaterType == "Groundwater",]%>%
+           dplyr::group_by(Year) %>%
+           dplyr::summarise(monthlyWaterUseMG = sum(monthlyWaterUseMG, na.rm = TRUE ))
+         #SurfaceWater
+         graphSWdata<-passData()[passData()$WaterType == "Surface Water",]%>%
+           dplyr::group_by(Year) %>%
+           dplyr::summarise(monthlyWaterUseMG = sum(monthlyWaterUseMG, na.rm = TRUE ))
+         #ReuseWater
+         graphRWdata<-passData()[passData()$WaterType == "Reuse",]%>%
+           dplyr::group_by(Year) %>%
+           dplyr::summarise(monthlyWaterUseMG = sum(monthlyWaterUseMG, na.rm = TRUE )) 
+         
+         #Graph of total water usage------
+         theGraph <- ggplot(data= graphdata,aes(graphdata$Year,graphdata$monthlyWaterUseMG)) + 
+           geom_line(aes(color="Total Water"), size= 1) +
+           labs(x ="Year", y="Industrial Water Use (MG)\n", 
+                title = "\n Texas Industrial Water Use by Water Type\n") +
+           scale_y_continuous(labels = scales::comma, breaks = seq(0,1600000, by =200000))+
+           scale_x_continuous(breaks = seq(1970,2015, by= 5))+
+           #geom_ribbon(ymin=0, ymax=graphdata$monthlyWaterUseMG, alpha=0.3)+
+           theme(axis.text =element_text(size=16), axis.title=element_text(size=20, face= "bold"), 
+                 legend.title = element_text(size = 18, face = "bold"), 
+                 legend.text = element_text(size = 16),
+                 plot.title = element_text(size = 22, face = "bold"))
+         
+         
+         if(input$WaterType == "Groundwater"){ 
+           theGraph <- theGraph +
+             geom_line(data= graphGWdata, aes(graphGWdata$Year,graphGWdata$monthlyWaterUseMG, color='Groundwater'), size= 1)+
+             scale_colour_discrete(name="Water Type")
+           
+         }
+         if(input$WaterType == "SurfaceWater"){ 
+           theGraph <- theGraph +
+             geom_line(data= graphSWdata, aes(graphSWdata$Year,graphSWdata$monthlyWaterUseMG, color='Surface Water'), size= 1)+
+             scale_colour_discrete(name="Water Type")
+           
+         }
+         if (input$WaterType == "Reuse"){ 
+           theGraph <- theGraph+
+             geom_line(data= graphRWdata, aes(graphRWdata$Year,graphRWdata$monthlyWaterUseMG, color='Reuse Water'), size= 1)+
+             scale_colour_discrete(name="Water Type")
+         }
+         if(input$WaterType == ("All" )){
+           theGraph <- theGraph+
+             geom_line(data= graphGWdata, aes(graphGWdata$Year,graphGWdata$monthlyWaterUseMG, color='Groundwater'), size= 1)+
+             geom_line(data= graphSWdata, aes(graphSWdata$Year,graphSWdata$monthlyWaterUseMG, color='Surface Water'), size= 1)+
+             geom_line(data= graphRWdata, aes(graphRWdata$Year,graphRWdata$monthlyWaterUseMG, color='Reuse Water'), size= 1)+
+             scale_colour_discrete(name="Water Type")
+         }
+         #This next section is added if user checks the box for USGS data
+         if(input$WaterType == ("All") & input$USGS){ 
+           theGraph <- theGraph+
+             geom_line(data= graphGWdata, aes(graphGWdata$Year,graphGWdata$monthlyWaterUseMG, color='Groundwater'), size= 1)+
+             geom_line(data= graphSWdata, aes(graphSWdata$Year,graphSWdata$monthlyWaterUseMG, color='Surface Water'), size= 1)+
+             geom_line(data= graphRWdata, aes(graphRWdata$Year,graphRWdata$monthlyWaterUseMG, color='Reuse Water'), size= 1)+
+             geom_line(linetype=2, data= usgs, aes(usgs$Year, usgs$Texas, color="USGS"),size= 1)+
+             geom_point( data= usgs, aes(usgs$Year, usgs$Texas, color="USGS"),size= 2.5)+
+              scale_colour_discrete(name="Water Type")
+         }
+         
+         
+         
+         print(theGraph)
+         
+       })
+     })
+     observe(if (input$state == "NorthCarolina"){ 
+       
+       #update radio buttons to reflect NC data
+       updateRadioButtons(session,  "WaterType",
+                          choices = list("All"= "All",
+                                         "Surface Water" = "SurfaceWater", 
+                                         "Groundwater" = "Groundwater",
+                                         "Mixed"= "Mixed"))
+       output$HistoricalTrends <- renderPlot({
+         
+         #Get the data ready to be plotted
+         graphdata<-passData() %>%
+           dplyr::group_by(Year) %>%
+           dplyr::summarise(monthlyWaterUseMG = sum(monthlyWaterUseMG, na.rm = TRUE ))
+         #Source- surface water
+         graphswdata<-passData()[passData()$NewWaterType == "Surface Water",]%>%
+           dplyr::group_by(Year) %>%
+           dplyr::summarise(monthlyWaterUseMG = sum(monthlyWaterUseMG, na.rm = TRUE ))
+         #Source- groundwater)
+         graphgwdata<-passData()[passData()$NewWaterType == "Groundwater",]%>%
+           dplyr::group_by(Year) %>%
+           dplyr::summarise(monthlyWaterUseMG = sum(monthlyWaterUseMG, na.rm = TRUE ))
+         #Source- groundwater)
+         graphmixdata<-passData()[passData()$NewWaterType == "Mix",]%>%
+           dplyr::group_by(Year) %>%
+           dplyr::summarise(monthlyWaterUseMG = sum(monthlyWaterUseMG, na.rm = TRUE ))
+         
+
+         #Graph of total water usage
+         theGraph <-  ggplot(data= graphdata,aes(graphdata$Year,graphdata$monthlyWaterUseMG)) + 
+           geom_line(aes(color="Total Water"), size= 1) +
+           labs(y="\n Industrial Water Use (MG)\n", x="\n Year \n",
+                title = "\nNorth Carolina Industrial Water Use by Water Type\n") +
+           scale_y_continuous(labels = scales::comma)+#, limits= c(0,60000), 
+                            #  breaks = c(0,10000,20000,30000,40000,50000,60000, 70000))+
+           scale_x_continuous()+
+           theme(axis.text =element_text(size=16), axis.title=element_text(size=20, face= "bold"), 
+                 legend.title = element_text(size = 18, face = "bold"), 
+                 legend.text = element_text(size = 16),
+                 plot.title = element_text(size = 22, face = "bold"))#,
+                 #legend.position = c(0.91,0.8))
+
+        
+         if(input$WaterType == "SurfaceWater"){
+           theGraph <- theGraph +
+             geom_line(data= graphswdata, aes(graphswdata$Year,graphswdata$monthlyWaterUseMG, color='Surface Water'),size= 1)+
+             scale_colour_discrete(name="Water Type")
+         }
+         if(input$WaterType == "Groundwater"){
+           theGraph <- theGraph +
+             geom_line(data= graphgwdata, aes(graphgwdata$Year,graphgwdata$monthlyWaterUseMG, color='Groundwater'), size= 1)+
+             scale_colour_discrete(name="Water Type")
+         }
+         if(input$WaterType == "Mixed"){
+           theGraph <- theGraph +
+             geom_line(data= graphmixdata, aes(graphmixdata$Year,graphmixdata$monthlyWaterUseMG, color='Mixed'), size= 1)+
+             scale_colour_discrete(name="Water Type")
+         }
+         if(input$WaterType == ("All" )){ 
+           theGraph <- theGraph+
+             geom_line(data= graphswdata, aes(graphswdata$Year,graphswdata$monthlyWaterUseMG, color='Surface Water'), size= 1) +
+             geom_line(data= graphgwdata, aes(graphgwdata$Year,graphgwdata$monthlyWaterUseMG, color='Groundwater'), size= 1)+
+             geom_line(data= graphmixdata, aes(graphmixdata$Year,graphmixdata$monthlyWaterUseMG, color='Mixed'), size= 1)+
+           scale_colour_discrete(name= "Water Type")
+          
+         }
+ 
+         print(theGraph)
+       })
+     }) 
+     
+     
+#7 Comparison Graph -----    
+   # I use the original data sets (instead of using the passData() command)
+    observe(if (input$state == "Indiana"){
+     output$Compare2 <- renderPlot({ 
+       #TExas
+       TXgraphdata<-TXIndusall %>%
+         dplyr::group_by(Year) %>%
+         dplyr::summarise(monthlyWaterUseMG = sum(monthlyWaterUseMG, na.rm = TRUE ))
+       #IN
+       INgraphdata<-monthlyIN %>%
+         dplyr::group_by(Year) %>%
+         dplyr::summarise(monthlyWaterUseMG = sum(monthlyWaterUseMG, na.rm = TRUE ))
+       #NC
+       NCUSGS <- read_csv("NC5yrData.csv")
+          NCUSGS<-subset(NCUSGS, NCUSGS$Year<"2011")
+       NCgraphdata<- NC %>%
+         dplyr::group_by(Year) %>%
+         dplyr::summarise(monthlyWaterUseMG = sum(monthlyWaterUseMG, na.rm = TRUE ))
+       
+       
+       
+       #Graph of total water usage------
+       theGraph <- ggplot(data= TXgraphdata,aes(TXgraphdata$Year,TXgraphdata$monthlyWaterUseMG)) + 
+         geom_line(aes(color="Texas"), size= 1) +
+         labs(x ="\n Year", y="\nIndustrial Water Use (MG)\n", 
+              title = "\n State Industrial Water Use \n",
+              caption= "Dashed line is data provided by USGS 5 year reports") +
+         scale_y_continuous(labels=comma, breaks = seq(0,1750000, by =200000))+
+         scale_x_continuous(breaks = seq(1970,2015, by= 5))+
+         #geom_ribbon(ymin=0, ymax=graphdata$monthlyWaterUseMG, alpha=0.3)+
+         theme(axis.text =element_text(size=16), axis.title=element_text(size=20, face= "bold"), 
+               legend.title = element_text(size = 18, face = "bold"), 
+               legend.text = element_text(size = 16),
+               plot.title = element_text(size = 22, face = "bold"),
+              plot.caption = element_text(size=16))
+       
+        #plot the graph with all states
+         theGraph <- theGraph+
+           geom_line(data= NCgraphdata, aes(NCgraphdata$Year,NCgraphdata$monthlyWaterUseMG, color='North Carolina'), size= 1)+
+           geom_line(data= INgraphdata, aes(INgraphdata$Year,INgraphdata$monthlyWaterUseMG, color='Indiana'), size= 1.6)+
+           geom_line(linetype=2, data= NCUSGS, aes(NCUSGS$Year, NCUSGS$TotalWaterMG, color= 'North Carolina'),size= 1)+
+           geom_point(data= NCUSGS, aes(NCUSGS$Year, NCUSGS$TotalWaterMG, color= 'North Carolina'),size= 1)+
+           scale_colour_discrete(name="State")
+         
+         print(theGraph)
+   })  
+   })
+    observe(if (input$state == "Texas"){
+      output$Compare2 <- renderPlot({ 
+        #TExas
+        TXgraphdata<-TXIndusall%>%
+          dplyr::group_by(Year) %>%
+          dplyr::summarise(monthlyWaterUseMG = sum(monthlyWaterUseMG, na.rm = TRUE ))
+        #IN
+        INgraphdata<-monthlyIN %>%
+          dplyr::group_by(Year) %>%
+          dplyr::summarise(monthlyWaterUseMG = sum(monthlyWaterUseMG, na.rm = TRUE ))
+        #NC
+        NCUSGS <- read_csv("NC5yrData.csv")
+        NCUSGS<-subset(NCUSGS, NCUSGS$Year<"2011")
+        NCgraphdata<- NC %>%
+          dplyr::group_by(Year) %>%
+          dplyr::summarise(monthlyWaterUseMG = sum(monthlyWaterUseMG, na.rm = TRUE ))
+        
+        
+        
+        #Graph of total water usage------
+        theGraph <- ggplot(data= TXgraphdata,aes(TXgraphdata$Year,TXgraphdata$monthlyWaterUseMG)) + 
+          geom_line(aes(color="Texas"), size= 1.6) +
+          labs(x ="\n Year", y="\nIndustrial Water Use (MG)\n", 
+               title = "\n State Industrial Water Use \n",
+               caption= "Dashed line is data provided by USGS 5 year reports") +
+          scale_y_continuous(labels=comma, breaks = seq(0,1750000, by =200000))+
+          scale_x_continuous(breaks = seq(1970,2015, by= 5))+
+          #geom_ribbon(ymin=0, ymax=graphdata$monthlyWaterUseMG, alpha=0.3)+
+          theme(axis.text =element_text(size=16), axis.title=element_text(size=20, face= "bold"), 
+                legend.title = element_text(size = 18, face = "bold"), 
+                legend.text = element_text(size = 16),
+                plot.title = element_text(size = 22, face = "bold"),
+                plot.caption = element_text(size=16))
+
+        
+        #plot the graph with all states
+        theGraph <- theGraph+
+          geom_line(data= NCgraphdata, aes(NCgraphdata$Year,NCgraphdata$monthlyWaterUseMG, color='North Carolina'), size= 1)+
+          geom_line(data= INgraphdata, aes(INgraphdata$Year,INgraphdata$monthlyWaterUseMG, color='Indiana'), size= 1)+
+          geom_line(linetype=2, data= NCUSGS, aes(NCUSGS$Year, NCUSGS$TotalWaterMG, color= 'North Carolina'),size= 1)+
+          scale_colour_discrete(name="State")
+        
+        print(theGraph)
+      })        
+    })
+    observe(if (input$state == "NorthCarolina"){
+      output$Compare2 <- renderPlot({ 
+        #TExas
+        TXgraphdata<-TXIndusall %>%
+          dplyr::group_by(Year) %>%
+          dplyr::summarise(monthlyWaterUseMG = sum(monthlyWaterUseMG, na.rm = TRUE ))
+        #IN
+        INgraphdata<-monthlyIN %>%
+          dplyr::group_by(Year) %>%
+          dplyr::summarise(monthlyWaterUseMG = sum(monthlyWaterUseMG, na.rm = TRUE ))
+        #NC
+        NCUSGS <- read_csv("NC5yrData.csv")
+          NCUSGS<-subset(NCUSGS, NCUSGS$Year<"2011")
+        NCgraphdata<- NC %>%
+          dplyr::group_by(Year) %>%
+          dplyr::summarise(monthlyWaterUseMG = sum(monthlyWaterUseMG, na.rm = TRUE ))
+          
+
+
+        #Graph of total water usage------
+        theGraph <- ggplot(data= TXgraphdata,aes(TXgraphdata$Year,TXgraphdata$monthlyWaterUseMG)) + 
+          geom_line(aes(color="Texas"), size= 1) +
+          labs(x ="\n Year", y="\nIndustrial Water Use (MG)\n", 
+               title = "\n State Industrial Water Use \n",
+               caption= "Dashed line is data provided by USGS 5 year reports") +
+          scale_y_continuous(labels= scales::comma, breaks = seq(0,1750000, by =200000))+
+          scale_x_continuous(breaks = seq(1970,2015, by= 5))+
+          #geom_ribbon(ymin=0, ymax=graphdata$monthlyWaterUseMG, alpha=0.3)+
+          theme(axis.text =element_text(size=16), axis.title=element_text(size=20, face= "bold"), 
+                legend.title = element_text(size = 18, face = "bold"), 
+                legend.text = element_text(size = 16),
+                plot.title = element_text(size = 22, face = "bold"),
+                                          plot.caption = element_text(size=16))
+        
+        #plot the graph with all states
+        theGraph <- theGraph+
+          geom_line(data= NCgraphdata, aes(NCgraphdata$Year,NCgraphdata$monthlyWaterUseMG, color='North Carolina'), size= 1.6)+
+          geom_line(data= INgraphdata, aes(INgraphdata$Year,INgraphdata$monthlyWaterUseMG, color='Indiana'), size= 1)+
+          geom_line(linetype=2, data= NCUSGS, aes(NCUSGS$Year, NCUSGS$TotalWaterMG, color= 'North Carolina'),size= 1.6)+
+          scale_colour_discrete(name="State")
+        
+        print(theGraph)
+      })        
+    })
+     
+
+    
+#8 projections tab
+    observe(if (input$state == "Indiana"){
+      output$Projections <- renderPlot({ 
+        
+        #load Data
+        forc <- read_csv("ForecastIN.csv", 
+                         col_types = cols(Date = col_date(format = "%m/%d/%Y")))
+        #Loading the IN data 
+        Monthly = read_csv("INmonthlyUpdated.csv", 
+                           col_types = cols(Date = col_date(format = "%m/%d/%Y")))
+
+        #plot
+        INproj<-ggplot(Monthly, aes(Monthly$Date, Monthly$Monthuse_MG)) + 
+          geom_line(color="navyblue", size= 1, aes(color= "Original Data")) +
+          labs(x= "\nYear\n", y="\n Industrial Water Use (MG)\n", 
+               title = "\n Industrial Water Use Prediction\n",
+               caption = "Seasonal ARIMA(1,1,1,0,1,1,12) model was used to \n project industrial water use for the next 5 years.\n Error, shown in grey, indicates 95% CI") +
+          scale_y_continuous(labels = scales::comma, breaks = seq(0,100000, by =10000))+
+          #scale_x_date(breaks= c(1985,2030, by= 5))+
+          geom_ribbon(data=forc, fill='grey', aes(forc$Date, forc$ErrorUp, ymin= forc$Projection,
+                                                  ymax = forc$ErrorUp))+
+          geom_ribbon(data=forc, fill ='grey', aes(forc$Date, forc$ErrorDown, 
+                                                   ymax= forc$Projection,ymin = forc$ErrorDown))+
+          geom_line(linetype =2,data=forc,color='navy', aes(forc$Date, forc$Projection), size= 1)+
+          theme(axis.text =element_text(size=16), axis.title=element_text(size=20, face= "bold"), 
+                legend.title = element_text(size = 18, face = "bold"), 
+                legend.text = element_text(size = 16),
+                plot.title = element_text(size = 22, face = "bold"),
+                plot.caption= element_text(size=14))
+        print(INproj)
+        
+      })
+    })
+    observe(if (input$state== "Texas"){
+      output$Projections <- renderPlot({ 
+        #load data
+        forc <- read_csv("Forecasttx.csv", 
+                         col_types = cols(Date = col_date(format = "%Y")))
+        Yearlytx = read.csv('TexasYearly.csv') #Data showing annual water consumption 
+        Yearlytx$Year2 = as.Date(Yearlytx$Date, "%m/%d/%Y")
+
+      #plot 
+      proj<-  ggplot(Yearlytx, aes(Year2, Yearlytx$Total.Water.Used..MG.)) + 
+          geom_line(color="navyblue", size= 1) +
+          labs(x ="\nYear\n", y="\n Industrial Water Use (MG)\n", 
+               title = "\n Industrial Water Use Prediction\n",
+               caption = "ARIMA(0,1,2) model was used to \n project industrial water use for the next 10 years.\n Error, shown in grey, indicates 95% CI") +
+        
+          scale_y_continuous(labels = scales::comma,breaks = seq(0,1800000, by =200000))+
+          scale_x_date()+
+          geom_ribbon(data=forc, fill='grey', aes(forc$Date, forc$ErrorUp, ymin= forc$Projection,
+                                                  ymax = forc$ErrorUp))+
+          geom_ribbon(data=forc, fill ='grey', aes(forc$Date, forc$ErrorDown, 
+                                                   ymax= forc$Projection,ymin = forc$ErrorDown))+
+          geom_line(linetype =2,data=forc,color='navy', aes(forc$Date, forc$Projection), size= 1)+
+          
+        theme(axis.text =element_text(size=16), axis.title=element_text(size=20, face= "bold"), 
+              legend.title = element_text(size = 18, face = "bold"), 
+              legend.text = element_text(size = 16),
+              plot.title = element_text(size = 22, face = "bold"),
+              plot.caption= element_text(size=15))
+      print(proj)
+    })
+    })  
+    observe(if (input$state== "NorthCarolina"){
+      output$Projections <- renderPlot({ 
+    #load Data
+    forc <- read_csv("Forecast.csv", 
+                     col_types = cols(Date = col_date(format = "%m/%d/%Y")))
+    
+    
+    Monthly = read.csv('NCMonthlyData.csv') #Data showing monthly variations
+    Monthly$Year = as.Date(Monthly$Date, "%m/%d/%Y")
+    
+    #plot
+    proj<-ggplot(Monthly, aes(Monthly$Year, Monthly$Total.Water.Used..MG.)) + 
+      geom_line(color="navyblue", size= 1) +
+      labs(x ="\nYear\n", y="\n Industrial Water Use (MG)\n", 
+           title = "\n Industrial Water Use Prediction\n",
+           caption = "Seasonal ARIMA(1,1,1,0,1,1,12) model was used to \n project industrial water use for the next 5 years.\n Error, shown in grey, indicates 95% CI") +
+      scale_y_continuous(labels = comma, breaks = seq(0,5500, by =500))+
+      scale_x_date()+
+      # geom_ribbon(ymin=0, ymax=graphdata$monthlyWaterUseMG, fill = 'lightgreen', alpha=0.3)+
+      geom_ribbon(data=forc, fill='grey', aes(forc$Date, forc$ErrorUp, ymin= forc$WaterUse,
+                                              ymax = forc$ErrorUp))+
+      geom_ribbon(data=forc, fill ='grey', aes(forc$Date, forc$ErrorDown, 
+                                               ymax= forc$WaterUse,ymin = forc$ErrorDown))+
+      geom_line(linetype =2,data=forc,color='navy', aes(forc$Date, forc$WaterUse), size= 1)+
+      
+      theme(axis.text =element_text(size=16), axis.title=element_text(size=20, face= "bold"), 
+            legend.title = element_text(size = 18, face = "bold"), 
+            legend.text = element_text(size = 16),
+            plot.title = element_text(size = 22, face = "bold"),
+            plot.caption= element_text(size=15))
+     
+    print(proj)
+      })
+    })
+    
+    
+#end script
+})
+
+
+    
+    

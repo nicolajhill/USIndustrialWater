@@ -1,15 +1,17 @@
 #
 # This is the user-interface definition of a Shiny web application. You can
 # run the application by clicking 'Run App' above.
-#
-# Find out more about building applications with Shiny here:
-# 
-#    http://shiny.rstudio.com/
-#
 
-library(shiny)
+#Nicola Hill
+#This script is the user interface (ui) portion of the web application.
+#The script loads appropriate files/packages and sets up the side bar and tabes
 
-# Define UI for application that draws a histogram
+
+#1. Connect Online-----
+
+
+
+
 #Scripting the user interface-----
 shinyUI(fluidPage(theme = shinytheme("cerulean"), 
                   headerPanel("U.S Industrial Water Usage"), 
@@ -24,22 +26,22 @@ shinyUI(fluidPage(theme = shinytheme("cerulean"),
                     #Change Date Range on all tabs except comparison & Projections-----
                     conditionalPanel(
                       condition = "input.state == 'Texas' & (input.tabSelected == 'trends'|
-                      input.tabSelected == 'Map'| input.tabSelected == 'Summary'|
-                      input.tabSelected == 'table' )",
+                          input.tabSelected == 'Map'| input.tabSelected == 'Summary'|
+                           input.tabSelected == 'table' )",
                       sliderInput ("dateRange", label = "Date Range",sep = "", min= 1970,
                                    max = 2015,value = c(1970,2015))),
                     
                     conditionalPanel(
                       condition = "input.state == 'Indiana'& (input.tabSelected == 'trends'|
-                      input.tabSelected == 'Map'| input.tabSelected == 'Summary'|
-                      input.tabSelected == 'table' )",
+                          input.tabSelected == 'Map'| input.tabSelected == 'Summary'|
+                           input.tabSelected == 'table' )",
                       sliderInput ("dateRange1", label = "Date Range",sep = "", min= 1985,
                                    max = 2016,value = c(1985,2016))),
                     
                     conditionalPanel(
                       condition = "input.state == 'NorthCarolina'& (input.tabSelected == 'trends'|
-                      input.tabSelected == 'Map'| input.tabSelected == 'Summary'|
-                      input.tabSelected == 'table' )",
+                          input.tabSelected == 'Map'| input.tabSelected == 'Summary'|
+                           input.tabSelected == 'table' )",
                       sliderInput ("dateRange2", label = "Date Range",sep = "", min= 2008, 
                                    max = 2016,value = c(2008,2016))),
                     
@@ -58,92 +60,93 @@ shinyUI(fluidPage(theme = shinytheme("cerulean"),
                                      conditionalPanel(condition= "input.tabSelected=='trends' & input.WaterType== 'All'
                                                       & (input.state == 'Texas'|input.state == 'Indiana') ",
                                                       checkboxInput("USGS", "USGS Data", FALSE))),
-                    
-                    #spatial Trends Tab-----
-                    conditionalPanel(condition="input.tabSelected == 'Map'& (input.state == 'Texas'|
-                                     input.state == 'NorthCarolina'|input.state == 'Indiana') " ,
-                                     radioButtons(inputId = "FacWater",
-                                                  label = "Show distrbution of:",
-                                                  choices = list("Industrial Water Use" = "wateruse",
-                                                                 "Facilities" = "facilities"
-                                                  ))),
-                    
-                    #Largest User Trends Tab----
-                    conditionalPanel(condition="input.tabSelected == 'table' & (input.state == 'Texas' |
-                                     input.state == 'NorthCarolina')",
-                                     radioButtons(inputId = "tablePie",
-                                                  label = "Show:",
-                                                  choices = list("Largest Users" = "Table",
-                                                                 "Largest NAICS Categories" = "Pie"))),
-                    # conditionalPanel(condition="input.tabSelected == 'table' & input.state == 'Indiana'",
-                    #                       radioButtons(inputId = "tablePie",
-                    #                                   label = "Show:",
-                    #                                  choices = list("Largest Users" = "Table"))),
-                    
-                    #Add Text to main panel----
-                    #Show Where data is from------
-                    conditionalPanel(
-                      condition = "input.state == 'Texas'& (input.tabSelected == 'trends'|
-                      input.tabSelected == 'Map'| input.tabSelected == 'Summary'|
-                      input.tabSelected == 'Table'|input.tabSelected == 'projections')",
-                      print(h5(em("Data provided by the Texas Water Development Board")))),
-                    
-                    conditionalPanel(
-                      condition = "input.state == 'Indiana'& (input.tabSelected == 'trends'|
-                      input.tabSelected == 'Map'| input.tabSelected == 'Summary'|
-                      input.tabSelected == 'Table'|input.tabSelected == 'projections')",
-                      print(h5(em("Data provided by the Indiana Department of Natural Resources")))),
-                    
-                    conditionalPanel(
-                      condition = "input.state == 'NorthCarolina'& (input.tabSelected == 'trends'|
-                      input.tabSelected == 'Map'| input.tabSelected == 'Summary'|
-                      input.tabSelected == 'Pie'|input.tabSelected == 'projections')",
-                      print(h5(em("Data provided by North Carolina Department of Environmental Quality"))))
-                    
-                    
-                    
+                                     
+                                     #spatial Trends Tab-----
+                                     conditionalPanel(condition="input.tabSelected == 'Map'& (input.state == 'Texas'|
+                               input.state == 'NorthCarolina'|input.state == 'Indiana') " ,
+                                                      radioButtons(inputId = "FacWater",
+                                                                   label = "Show distrbution of:",
+                                                                   choices = list("Industrial Water Use" = "wateruse",
+                                                                                  "Facilities" = "facilities"
+                                                                   ))),
+                                     
+                                     #Largest User Trends Tab----
+                                     conditionalPanel(condition="input.tabSelected == 'table' & (input.state == 'Texas' |
+                               input.state == 'NorthCarolina')",
+                                                      radioButtons(inputId = "tablePie",
+                                                                   label = "Show:",
+                                                                   choices = list("Largest Users" = "Table",
+                                                                                  "Largest NAICS Categories" = "Pie"))),
+                                     # conditionalPanel(condition="input.tabSelected == 'table' & input.state == 'Indiana'",
+                                     #                       radioButtons(inputId = "tablePie",
+                                     #                                   label = "Show:",
+                                     #                                  choices = list("Largest Users" = "Table"))),
+                                     
+                                     #Add Text to main panel----
+                                     #Show Where data is from------
+                                     conditionalPanel(
+                                       condition = "input.state == 'Texas'& (input.tabSelected == 'trends'|
+                              input.tabSelected == 'Map'| input.tabSelected == 'Summary'|
+                               input.tabSelected == 'Table'|input.tabSelected == 'projections')",
+                                       print(h5(em("Data provided by the Texas Water Development Board")))),
+                                     
+                                     conditionalPanel(
+                                       condition = "input.state == 'Indiana'& (input.tabSelected == 'trends'|
+                              input.tabSelected == 'Map'| input.tabSelected == 'Summary'|
+                              input.tabSelected == 'Table'|input.tabSelected == 'projections')",
+                                       print(h5(em("Data provided by the Indiana Department of Natural Resources")))),
+                                     
+                                     conditionalPanel(
+                                       condition = "input.state == 'NorthCarolina'& (input.tabSelected == 'trends'|
+                              input.tabSelected == 'Map'| input.tabSelected == 'Summary'|
+                              input.tabSelected == 'Pie'|input.tabSelected == 'projections')",
+                                       print(h5(em("Data provided by North Carolina Department of Environmental Quality"))))
+                                     
+                                     
+                                     
                     ),
-                  
-                  
-                  
-                  #Create Main Panel-----
-                  mainPanel(
-                    tabsetPanel( id= "tabSelected",
-                                 tabPanel(strong(h3("Summary")), value = "Summary",
-                                          fluidRow(#column(10, wellPanel(h4(textOutput("Summary")))), 
-                                            column(4,wellPanel(h4(textOutput("Summary1")))),
-                                            column(4, wellPanel(h4(textOutput("Summary2")))),
-                                            column(4,wellPanel(h4(textOutput("Summary3")))),
-                                            column(12, wellPanel(plotOutput("Compare2"))),
-                                            value= "Summary" )),
-                                 
-                                 tabPanel(strong(h3("Largest Users")), value= "table",
-                                          conditionalPanel(
-                                            condition =  "input.tablePie == 'Table'",
-                                            tabPanel("Largest Users", value= "Table",
-                                                     DT::dataTableOutput("LargestUsers", width= "100%", height="560px"))),
-                                          conditionalPanel(
-                                            condition =  "input.tablePie == 'Pie' & (input.state == 'Texas' |
-                                            input.state == 'NorthCarolina')",
-                                            tabPanel("Largest NAICS Categories",value= "Pie", plotlyOutput("Pie", 
-                                                                                                           width= "100%", height= "560px")))),
-                                 
-                                 tabPanel(strong(h3("Spatial Trends")),leafletOutput("Map",
-                                                                                     width= "100%", height="580px"), 
-                                          value= "Map"),
-                                 tabPanel(strong(h3("Temporal Trends")), plotOutput("HistoricalTrends",
-                                                                                    width= "100%", height="560px"),  
-                                          value= "trends"),
-                                 
-                                 
-                                 tabPanel(strong(h3("Water Use Projections")), plotOutput("Projections",
-                                                                                          width= "100%", height="560px"), 
-                                          value= "projections")#,
-                                 # tabPanel(strong(h3("Comparison")), plotOutput("Compare",
-                                 #  width= "100%", height="560px"), 
-                                 #value= "compare")
-                                 
-                  )
-                  )
-                                          ))
-
+                    
+                    
+                    
+                    #Create Main Panel-----
+                    mainPanel(
+                      tabsetPanel( id= "tabSelected",
+                                   tabPanel(strong(h3("Summary")), value = "Summary",
+                                            fluidRow(#column(10, wellPanel(h4(textOutput("Summary")))), 
+                                              column(4,wellPanel(h4(textOutput("Summary1")))),
+                                              column(4, wellPanel(h4(textOutput("Summary2")))),
+                                              column(4,wellPanel(h4(textOutput("Summary3")))),
+                                              column(12, wellPanel(plotOutput("Compare2"))),
+                                              value= "Summary" )),
+                                   
+                                   tabPanel(strong(h3("Largest Users")), value= "table",
+                                            conditionalPanel(
+                                              condition =  "input.tablePie == 'Table'",
+                                              tabPanel("Largest Users", value= "Table",
+                                                       DT::dataTableOutput("LargestUsers", width= "100%", height="560px"))),
+                                            conditionalPanel(
+                                              condition =  "input.tablePie == 'Pie' & (input.state == 'Texas' |
+                                                            input.state == 'NorthCarolina')",
+                                              tabPanel("Largest NAICS Categories",value= "Pie", plotlyOutput("Pie", 
+                                                                                                             width= "100%", height= "560px")))),
+                                   
+                                   tabPanel(strong(h3("Spatial Trends")),leafletOutput("Map",
+                                                                                       width= "100%", height="580px"), 
+                                            value= "Map"),
+                                   tabPanel(strong(h3("Temporal Trends")), plotOutput("HistoricalTrends",
+                                                                                      width= "100%", height="560px"),  
+                                            value= "trends"),
+                                   
+                                   
+                                   tabPanel(strong(h3("Water Use Projections")), plotOutput("Projections",
+                                                                                            width= "100%", height="560px"), 
+                                            value= "projections")#,
+                                   # tabPanel(strong(h3("Comparison")), plotOutput("Compare",
+                                   #  width= "100%", height="560px"), 
+                                   #value= "compare")
+                                   
+                      )
+                    )
+                  ))
+        
+        
