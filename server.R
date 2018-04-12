@@ -41,20 +41,20 @@
 
 #data prep
 #setwd("Z:/Working3_18/Working3_18")
+setwd("C:/Users/NicolaHill/Documents/GitHub/USIndustrialWater")
 
 #data prep-----
     #Texas
-    TXIndusall<- read.csv("yearlyTXshort4.csv")
-    TXIndusall<- subset(TXIndusall,TXIndusall$Year>1970)
+      TXIndusall<- read.csv("TexasData.csv")
+      TXIndusall<- subset(TXIndusall,TXIndusall$Year>1970)
 
     
     #IN
-    monthlyIN<- read.csv("IN_updated3.csv")  
-    INFips<- read.csv("INCountyFIPS.csv")
-    monthlyIN$DateProper<-as.Date(as.character(monthlyIN$Date), "%m/%d/%Y")  
+    IN<- read.csv("INData.csv")  
+    IN$DateProper<-as.Date(as.character(IN$Date), "%m/%d/%Y")  
     
     #NC
-    NC<- read.csv("monthlyNCshort.csv")
+    NC<- read.csv("NCData.csv")
     NC$Date<-as.Date(as.character(NC$Date), "%m/%d/%Y")  
     
     #
@@ -75,8 +75,8 @@
 
        }
        if(input$state == "Indiana"){
-        data <- filter(monthlyIN, monthlyIN$Year >= input$dateRange1[1] &
-                             monthlyIN$Year <= input$dateRange1[2])
+        data <- filter(IN, IN$Year >= input$dateRange1[1] &
+                             IN$Year <= input$dateRange1[2])
        
         }
        if(input$state == "NorthCarolina"){
@@ -299,12 +299,11 @@
            dplyr::group_by(Year) %>%
            dplyr::summarise(monthlyWaterUseMG = sum(monthlyWaterUseMG, na.rm = TRUE ))
          #IN
-         INgraphdata<-monthlyIN %>%
+         INgraphdata<-IN %>%
            dplyr::group_by(Year) %>%
            dplyr::summarise(monthlyWaterUseMG = sum(monthlyWaterUseMG, na.rm = TRUE ))
          #NC
-         NCUSGS <- read_csv("NC5yrData.csv")
-         NCUSGS<-subset(NCUSGS, NCUSGS$Year<"2011")
+        
          NCgraphdata<- NC %>%
            dplyr::group_by(Year) %>%
            dplyr::summarise(monthlyWaterUseMG = sum(monthlyWaterUseMG, na.rm = TRUE ))
@@ -330,8 +329,8 @@
          theGraph <- theGraph+
            geom_line(data= NCgraphdata, aes(NCgraphdata$Year,NCgraphdata$monthlyWaterUseMG, color='North Carolina'), size= 1)+
            geom_line(data= INgraphdata, aes(INgraphdata$Year,INgraphdata$monthlyWaterUseMG, color='Indiana'), size= 1.6)+
-           geom_line(linetype=2, data= NCUSGS, aes(NCUSGS$Year, NCUSGS$TotalWaterMG, color= 'North Carolina'),size= 1)+
-           geom_point(data= NCUSGS, aes(NCUSGS$Year, NCUSGS$TotalWaterMG, color= 'North Carolina'),size= 1)+
+           geom_line(linetype=2, data= usgs, aes(usgs$Year, usgs$North.Carolina, color= 'North Carolina'),size= 1)+
+           geom_point(data= usgs, aes(usgs$Year, usgs$North.Carolina, color= 'North Carolina'),size= 2)+
            scale_colour_discrete(name="State")
          
          print(theGraph)
@@ -344,12 +343,10 @@
            dplyr::group_by(Year) %>%
            dplyr::summarise(monthlyWaterUseMG = sum(monthlyWaterUseMG, na.rm = TRUE ))
          #IN
-         INgraphdata<-monthlyIN %>%
+         INgraphdata<-IN %>%
            dplyr::group_by(Year) %>%
            dplyr::summarise(monthlyWaterUseMG = sum(monthlyWaterUseMG, na.rm = TRUE ))
          #NC
-         NCUSGS <- read_csv("NC5yrData.csv")
-         NCUSGS<-subset(NCUSGS, NCUSGS$Year<"2011")
          NCgraphdata<- NC %>%
            dplyr::group_by(Year) %>%
            dplyr::summarise(monthlyWaterUseMG = sum(monthlyWaterUseMG, na.rm = TRUE ))
@@ -376,7 +373,8 @@
          theGraph <- theGraph+
            geom_line(data= NCgraphdata, aes(NCgraphdata$Year,NCgraphdata$monthlyWaterUseMG, color='North Carolina'), size= 1)+
            geom_line(data= INgraphdata, aes(INgraphdata$Year,INgraphdata$monthlyWaterUseMG, color='Indiana'), size= 1)+
-           geom_line(linetype=2, data= NCUSGS, aes(NCUSGS$Year, NCUSGS$TotalWaterMG, color= 'North Carolina'),size= 1)+
+           geom_line(linetype=2, data= usgs, aes(usgs$Year, usgs$North.Carolina, color= 'North Carolina'),size= 1)+
+           geom_point(data= usgs, aes(usgs$Year, usgs$North.Carolina, color= 'North Carolina'),size= 2)+
            scale_colour_discrete(name="State")
          
          print(theGraph)
@@ -389,12 +387,10 @@
            dplyr::group_by(Year) %>%
            dplyr::summarise(monthlyWaterUseMG = sum(monthlyWaterUseMG, na.rm = TRUE ))
          #IN
-         INgraphdata<-monthlyIN %>%
+         INgraphdata<-IN %>%
            dplyr::group_by(Year) %>%
            dplyr::summarise(monthlyWaterUseMG = sum(monthlyWaterUseMG, na.rm = TRUE ))
          #NC
-         NCUSGS <- read_csv("NC5yrData.csv")
-         NCUSGS<-subset(NCUSGS, NCUSGS$Year<"2011")
          NCgraphdata<- NC %>%
            dplyr::group_by(Year) %>%
            dplyr::summarise(monthlyWaterUseMG = sum(monthlyWaterUseMG, na.rm = TRUE ))
@@ -420,7 +416,8 @@
          theGraph <- theGraph+
            geom_line(data= NCgraphdata, aes(NCgraphdata$Year,NCgraphdata$monthlyWaterUseMG, color='North Carolina'), size= 1.6)+
            geom_line(data= INgraphdata, aes(INgraphdata$Year,INgraphdata$monthlyWaterUseMG, color='Indiana'), size= 1)+
-           geom_line(linetype=2, data= NCUSGS, aes(NCUSGS$Year, NCUSGS$TotalWaterMG, color= 'North Carolina'),size= 1.6)+
+           geom_line(linetype=2, data= usgs, aes(usgs$Year,usgs$North.Carolina, color= 'North Carolina'),size= 1.6)+
+           geom_point(data= usgs, aes(usgs$Year,usgs$North.Carolina, color= 'North Carolina'),size= 2)+
            scale_colour_discrete(name="State")
          
          print(theGraph)
@@ -1047,12 +1044,14 @@
         #load Data
         forc <- read_csv("ForecastIN.csv", 
                          col_types = cols(Date = col_date(format = "%m/%d/%Y")))
-        #Loading the IN data 
-        Monthly = read_csv("INmonthlyUpdated.csv", 
-                           col_types = cols(Date = col_date(format = "%m/%d/%Y")))
+        
+        #Find make find total water consumption each month in IN
+         MonthlyIN <- IN %>%
+          dplyr::group_by(DateProper) %>%
+          dplyr::summarise("TotalWaterUseMG" = sum(monthlyWaterUseMG))
 
         #plot
-        INproj<-ggplot(Monthly, aes(Monthly$Date, Monthly$Monthuse_MG)) + 
+        INproj<-ggplot(MonthlyIN, aes(MonthlyIN$DateProper, MonthlyIN$TotalWaterUseMG)) + 
           geom_line(color="navyblue", size= 1, aes(color= "Original Data")) +
           labs(x= "\nYear\n", y="\n Industrial Water Use (MG)\n", 
                title = "\n Industrial Water Use Prediction\n",
@@ -1076,20 +1075,27 @@
     observe(if (input$state== "Texas"){
       output$Projections <- renderPlot({ 
         #load data
-        forc <- read_csv("Forecasttx.csv", 
-                         col_types = cols(Date = col_date(format = "%Y")))
-        Yearlytx = read.csv('TexasYearly.csv') #Data showing annual water consumption 
-        Yearlytx$Year2 = as.Date(Yearlytx$Date, "%m/%d/%Y")
+        forc <- read_csv("Forecasttx.csv")
+                        
+        
+        #Find make find total water consumption each year in TX
+        Yearlytx <- TXIndusall %>%
+          dplyr::group_by(Year) %>%
+          dplyr::summarise("TotalWaterUseMG" = sum(monthlyWaterUseMG))
+        
+        #subset the years to match projection script
+        Yearlytx <- subset(Yearlytx, Yearlytx$Year > 1975)
+        
 
       #plot 
-      proj<-  ggplot(Yearlytx, aes(Year2, Yearlytx$Total.Water.Used..MG.)) + 
+      proj<-  ggplot(Yearlytx, aes(Yearlytx$Year, Yearlytx$TotalWaterUseMG)) + 
           geom_line(color="navyblue", size= 1) +
           labs(x ="\nYear\n", y="\n Industrial Water Use (MG)\n", 
                title = "\n Industrial Water Use Prediction\n",
                caption = "ARIMA(0,1,2) model was used to \n project industrial water use for the next 10 years.\n Error, shown in grey, indicates 95% CI") +
         
           scale_y_continuous(labels = scales::comma,breaks = seq(0,1800000, by =200000))+
-          scale_x_date()+
+          scale_x_discrete()+
           geom_ribbon(data=forc, fill='grey', aes(forc$Date, forc$ErrorUp, ymin= forc$Projection,
                                                   ymax = forc$ErrorUp))+
           geom_ribbon(data=forc, fill ='grey', aes(forc$Date, forc$ErrorDown, 
@@ -1107,15 +1113,18 @@
     observe(if (input$state== "NorthCarolina"){
       output$Projections <- renderPlot({ 
     #load Data
-    forc <- read_csv("Forecast.csv", 
+    forc <- read_csv("ForecastNC.csv", 
                      col_types = cols(Date = col_date(format = "%m/%d/%Y")))
     
     
-    Monthly = read.csv('NCMonthlyData.csv') #Data showing monthly variations
-    Monthly$Year = as.Date(Monthly$Date, "%m/%d/%Y")
+    #Find make find total water consumption each Month in NC
+    MonthlyNC <- NC %>%
+      dplyr::group_by(Date) %>%
+      dplyr::summarise("TotalWaterUseMG" = sum(monthlyWaterUseMG))
     
+   
     #plot
-    proj<-ggplot(Monthly, aes(Monthly$Year, Monthly$Total.Water.Used..MG.)) + 
+    proj<-ggplot(MonthlyNC, aes(MonthlyNC$Date, MonthlyNC$TotalWaterUseMG)) + 
       geom_line(color="navyblue", size= 1) +
       labs(x ="\nYear\n", y="\n Industrial Water Use (MG)\n", 
            title = "\n Industrial Water Use Prediction\n",
