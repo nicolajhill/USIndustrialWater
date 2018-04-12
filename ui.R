@@ -4,25 +4,25 @@
 
 
 #1. Connect Online-----
-library("tidyverse")
+library( tidyverse )
 library(plyr)
 library(dplyr)
 library(ggplot2)
 library(scales)
 library(RColorBrewer)
 library(shiny)
-library("DT")
-library("shinythemes")
-library("lubridate")
-library("lettercase")
-library("leaflet")
-library("stringr")
-library("sf")
-library("tidycensus")
-library("tigris")
-library("maps")
-library("plotly")
-library("rsconnect")
+library( DT )
+library( shinythemes )
+library( lubridate )
+library( lettercase )
+library( leaflet )
+library( stringr )
+library( sf )
+library( tidycensus )
+library( tigris )
+library( maps )
+library( plotly )
+
 
 
 #Scripting the user interface-----
