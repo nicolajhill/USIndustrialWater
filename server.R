@@ -41,7 +41,7 @@
 
 #data prep
 #setwd("Z:/Working3_18/Working3_18")
-setwd("C:/Users/NicolaHill/Documents/GitHub/USIndustrialWater")
+#setwd("C:/Users/NicolaHill/Documents/GitHub/USIndustrialWater")
 
 #data prep-----
     #Texas
@@ -51,7 +51,7 @@ setwd("C:/Users/NicolaHill/Documents/GitHub/USIndustrialWater")
     
     #IN
     IN<- read.csv("INData.csv")  
-    IN$DateProper<-as.Date(as.character(IN$Date), "%m/%d/%Y")  
+    IN$DateProper<-as.Date(as.character(IN$DateProper), "%m/%d/%Y")  
     
     #NC
     NC<- read.csv("NCData.csv")
