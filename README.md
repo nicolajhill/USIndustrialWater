@@ -1,9 +1,9 @@
 # USIndustrialWater
-## Rshiny app of Historical Trends and Projections of U. S. Industrial Water Use
+#### Rshiny app of Historical Trends and Projections of U. S. Industrial Water Use
 
-The R shiny app was completed a portion of our Master’s Project, evaluating the historical trends and projection of U. S. industrial water use. This work highlights the current trends and the need for better reporting and recording of industrial water use. This app acts to promote data transparency and visualization tools in planning for the future. The full written report can be found here: ……..d the working R shiny app can be viewed here: https://shiny.web.duke.edu
+The R shiny app was completed as portion of our Master’s Project, evaluating the historical trends and projection of U. S. industrial water use. This work highlights the current trends and the need for better reporting and recording of industrial water use. This app acts to promote data transparency and visualization tools in planning for the future. The working R shiny app can be viewed here: https://shiny.web.duke.edu
 
-### This collection of files includes:
+#### This collection of files includes:
 1. R Scripts:
    - .ui and .server files for running the app
    - Install package list if you are downloading all of the data
@@ -18,5 +18,5 @@ The R shiny app was completed a portion of our Master’s Project, evaluating th
     - An ARIMA model was run for Texas and a Seasonal ARIMA model was used to create the projections for Indiana and North Carolina
     - The projections were created in separate R scripts not included, but the files themselves include the water use projection along           with the error associated with 95% confidence interval. 
  
-### Acknowledgements
+#### Acknowledgements
 Many thanks to Dr. Martin Doyle for his guidance throughout this project. Also, thanks Dr. John Fay, Dr. Lauren Patterson, John Little, and Dr. Joel Herndon for their help with troubleshooting the R shiny app and Christopher Collins and Dr. Matt Ross for their help with putting the app online.     
