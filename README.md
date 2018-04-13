@@ -21,6 +21,10 @@ The R shiny app was completed as portion of our Master’s Project, evaluating t
     - An ARIMA model was run for Texas and a Seasonal ARIMA model was used to create the projections for Indiana and North Carolina
     - The projections were created in separate R scripts not included, but the files themselves include the water use projection along           with the error associated with 95% confidence interval. 
     - Forecast[State Name].csv
+    
+5. .stevedore Folder
+    - The folder has a file with a list of packages that are needed to run the app online 
+
  
 #### Acknowledgements
 Many thanks to Dr. Martin Doyle for his guidance throughout this project. Also, thanks Dr. John Fay, Dr. Lauren Patterson, John Little, and Dr. Joel Herndon for their help with troubleshooting the R shiny app and Christopher Collins and Dr. Matt Ross for their help with putting the app online.     
