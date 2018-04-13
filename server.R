@@ -18,6 +18,7 @@
 #1. Load data .Rdatafile?----
       load(".RData")
 
+setwd("C:/Users/NicolaHill/Documents/GitHub/USIndustrialWater")
     library("tidyverse")
     library(plyr)
     library(dplyr)
@@ -31,7 +32,6 @@
     library("lettercase")
     library("leaflet")
     library("stringr")
-    library("sf")
     library("tidycensus")
     library("tigris")
     library("maps")
@@ -41,7 +41,7 @@
 
 #data prep
 #setwd("Z:/Working3_18/Working3_18")
-#setwd("C:/Users/NicolaHill/Documents/GitHub/USIndustrialWater")
+setwd("C:/Users/NicolaHill/Documents/GitHub/USIndustrialWater")
 
 #data prep-----
     #Texas
@@ -523,7 +523,7 @@
        
        output$Pie <- renderPlotly({ 
          #Organize data
-         NAICSGroupNC<- passData() %>% 
+         NAICSGroupNC<- NC %>% 
            dplyr::group_by(NewSubType) %>%
            dplyr::summarise(TotalWaterUseMG = sum(monthlyWaterUseMG, na.rm = TRUE )) %>% 
            dplyr:: mutate(Percent = round(TotalWaterUseMG/ sum(TotalWaterUseMG)*100)) %>% 
@@ -1090,19 +1090,19 @@
       #plot 
       proj<-  ggplot(Yearlytx, aes(Yearlytx$Year, Yearlytx$TotalWaterUseMG)) + 
           geom_line(color="navyblue", size= 1) +
-          labs(x ="\nYear\n", y="\n Industrial Water Use (MG)\n", 
+          labs(x =" ", y="\n Industrial Water Use (MG)\n", 
                title = "\n Industrial Water Use Prediction\n",
                caption = "ARIMA(0,1,2) model was used to \n project industrial water use for the next 10 years.\n Error, shown in grey, indicates 95% CI") +
         
           scale_y_continuous(labels = scales::comma,breaks = seq(0,1800000, by =200000))+
-          scale_x_discrete()+
+          scale_x_continuous(breaks = seq (1970, 2026, by= 5))+
           geom_ribbon(data=forc, fill='grey', aes(forc$Date, forc$ErrorUp, ymin= forc$Projection,
                                                   ymax = forc$ErrorUp))+
           geom_ribbon(data=forc, fill ='grey', aes(forc$Date, forc$ErrorDown, 
                                                    ymax= forc$Projection,ymin = forc$ErrorDown))+
           geom_line(linetype =2,data=forc,color='navy', aes(forc$Date, forc$Projection), size= 1)+
           
-        theme(axis.text =element_text(size=16), axis.title=element_text(size=20, face= "bold"), 
+        theme(axis.text =element_text(size=16), axis.title=element_text(size=16, face= "bold"), 
               legend.title = element_text(size = 18, face = "bold"), 
               legend.text = element_text(size = 16),
               plot.title = element_text(size = 22, face = "bold"),

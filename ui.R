@@ -18,7 +18,6 @@ library(lettercase)
 library(leaflet)
 library(stringi)
 library(stringr)
-
 library(sf)
 library(tidycensus)
 library(tigris)
@@ -227,12 +226,10 @@ mainPanel(
   
   tabPanel(
     strong(h3("Spatial Trends")),
-    leafletOutput(
-      "Map",
-      value = "Map",
+    leafletOutput( "Map",
+      
       width = "100%",
-      height = "580px"
-    )
+      height = "580px"), value = "Map"
   ),
   tabPanel(
     strong(h3("Temporal Trends")),
