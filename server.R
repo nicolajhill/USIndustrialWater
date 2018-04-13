@@ -18,27 +18,6 @@
 #1. Load data .Rdatafile?----
       load(".RData")
 
-setwd("C:/Users/NicolaHill/Documents/GitHub/USIndustrialWater")
-    library("tidyverse")
-    library(plyr)
-    library(dplyr)
-    library(ggplot2)
-    library(scales)
-    library(RColorBrewer)
-    library(shiny) 
-    library("DT")
-    library("shinythemes")
-    library("lubridate")
-    library("lettercase")
-    library("leaflet")
-    library("stringr")
-    library("tidycensus")
-    library("tigris")
-    library("maps")
-    library("plotly")
-    library("rsconnect")
-    
-
 #data prep
 #setwd("Z:/Working3_18/Working3_18")
 setwd("C:/Users/NicolaHill/Documents/GitHub/USIndustrialWater")

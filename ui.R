@@ -4,25 +4,20 @@
 
 
 #1. Connect Online-----
-library(tidyverse)
-library(plyr)
-library(dplyr)
-library(ggplot2)
-library(scales)
-library(RColorBrewer)
-library(shiny)
-library(DT)
 library(shinythemes)
-library(lubridate)
-library(lettercase)
-library(leaflet)
-library(stringi)
-library(stringr)
-library(sf)
+library(tidyverse)
 library(tidycensus)
-library(tigris)
 library(maps)
+library(leaflet)
 library(plotly)
+library(markdown)
+
+library(DT)
+library(lettercase)
+library(stringi)
+library(tigris)
+
+
 
 
 
