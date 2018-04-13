@@ -17,7 +17,7 @@ The R shiny app was completed as portion of our Master’s Project, evaluating t
     - [State Name]Data.csv
     - There is also a dataset called usgs.csv that includes the usgs estimates for each state from 1985-2010
 
-4.	Water use projection files were also collected
+4.	Water use projection files
     - An ARIMA model was run for Texas and a Seasonal ARIMA model was used to create the projections for Indiana and North Carolina
     - The projections were created in separate R scripts not included, but the files themselves include the water use projection along           with the error associated with 95% confidence interval. 
     - Forecast[State Name].csv
