@@ -6,8 +6,8 @@ The R shiny app was completed a portion of our Master’s Project, evaluating th
 This collection of files includes:
 
 1.	R Scripts:
-- .ui and .server files for running the app
-- Install package list if you are downloading all of the data
+   - .ui and .server files for running the app
+  - Install package list if you are downloading all of the data
 
 2.	Shapefiles of Texas, North Carolina, and IN counties
 
