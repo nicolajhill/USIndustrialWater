@@ -13,7 +13,7 @@ This collection of files includes:
     a.  These amount of data in each dataset, including the time frame and type of data collected differs between state. Additionally, some         of the files were too large to upload to GitHub, so unused columns were deleted
 4.	Water use projection files were also collected
     a.	An ARIMA model was run for Texas and a Seasonal ARIMA model was used to create the projections for Indiana and North Carolina
-    b.	 The projections were created in separate R scripts not included, but the files themselves include the water use projection along with the error associated with 95% confidence interval. 
-    
-Many thanks to Dr. Martin Doyle for his guidance throughout this project, Dr. John Fay, Dr. Lauren Patterson, John Little, Dr. Joel Herndon for their help with troubleshooting the R shiny app, and Christopher Collins and Dr. Matt Ross for their help with putting the app online. 
+    b.	The projections were created in separate R scripts not included, but the files themselves include the water use projection along with the error associated with 95% confidence interval. 
+    a
+Many thanks to Dr. Martin Doyle for his guidance throughout this project. Also, thanks Dr. John Fay, Dr. Lauren Patterson, John Little, and Dr. Joel Herndon for their help with troubleshooting the R shiny app and Christopher Collins and Dr. Matt Ross for their help with putting the app online. 
     
