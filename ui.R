@@ -11,7 +11,8 @@ library(maps)
 library(leaflet)
 library(plotly)
 library(markdown)
-
+#library(sp)
+library(sf)
 library(DT)
 library(lettercase)
 library(stringi)
@@ -120,21 +121,18 @@ conditionalPanel(
 
 #Largest User Trends Tab----
 conditionalPanel(
-  condition = "input.tabSelected == 'table' & (input.state == 'Texas' |
-  input.state == 'NorthCarolina')",
+  condition = "input.tabSelected == 'table'",
   radioButtons(
     inputId = "tablePie",
     label = "Show:",
     choices = list(
-      "Largest Users" = "Table",
-      "Largest NAICS Categories" = "Pie"
+      "Largest Users List" = "Table",
+      "Largest Users by Percent" = "Pie"
     )
   )
   ),
-# conditionalPanel(condition="input.tabSelected == 'table' & input.state == 'Indiana'",
-#                       radioButtons(inputId = "tablePie",
-#                                   label = "Show:",
-#                                  choices = list("Largest Users" = "Table"))),
+
+
 
 #Add Text to main panel----
 #Show Where data is from------
@@ -209,8 +207,7 @@ mainPanel(
         )
       ),
       conditionalPanel(
-        condition =  "input.tablePie == 'Pie' & (input.state == 'Texas' |
-        input.state == 'NorthCarolina')",
+        condition =  "input.tablePie == 'Pie'",
         tabPanel(
           "Largest NAICS Categories",
           value = "Pie",

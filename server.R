@@ -32,6 +32,10 @@ setwd("C:/Users/NicolaHill/Documents/GitHub/USIndustrialWater")
     IN<- read.csv("INData.csv")  
     IN$DateProper<-as.Date(as.character(IN$DateProper), "%m/%d/%Y")  
     
+    #ArcelorMittal is a large user and has multiple names- combine those names
+    IN$Facility <- gsub("Arcelormittal Tow Path Valley Business Development Company",
+                                "ArcelorMittal", IN$Facility)
+    
     #NC
     NC<- read.csv("NCData.csv")
     NC$Date<-as.Date(as.character(NC$Date), "%m/%d/%Y")  
@@ -98,10 +102,9 @@ setwd("C:/Users/NicolaHill/Documents/GitHub/USIndustrialWater")
          
          
          TextUser<-paste0("Largest water user: ")
-         extraline<- "                   "
          textuser2<- paste0(head(sortedUsers$Facility, 1),".")
          
-         paste(TextUser,extraline, textuser2)
+         paste(TextUser, textuser2)
          
          
        })
@@ -524,8 +527,61 @@ setwd("C:/Users/NicolaHill/Documents/GitHub/USIndustrialWater")
          print(pie)
        })
      })
+     #Indiana doesn't have NAICS data, so just make a pie chart of facilities
+     observe(if(input$state== "Indiana"& input$tablePie =="Pie"){
+       #Update the radio buttons to reflect the Indiana data
+       output$Pie <- renderPlotly({
+         
+        
+         
+         #find the top users
+         INgraphdata <- passData() %>%
+           dplyr::group_by(Facility) %>%
+           dplyr::summarise(TotalWaterUseMG = sum(monthlyWaterUseMG, na.rm = TRUE)) %>%
+           dplyr::mutate(Percent = round(TotalWaterUseMG / sum(TotalWaterUseMG) * 100)) %>%
+           dplyr::arrange(desc(TotalWaterUseMG))
+         
+         
+         
+         #subset data to the top 4 facility users
+         Piedata <- INgraphdata[1:4, ]
+         
+        
+         #get the sum of the other facility users
+         #Sum the water usea
+         other <- INgraphdata %>%
+           slice(5:n()) %>%
+           dplyr::summarise(TotalWaterUseMG = sum(TotalWaterUseMG, na.rm = TRUE))
+         
+         #make new column for percent (calculate new percent based off of original file)
+         otherP <- INgraphdata %>%
+           slice(5:n()) %>%
+           dplyr::summarise(Percent = (sum(TotalWaterUseMG)/sum(INgraphdata$TotalWaterUseMG))*100)
+         
+         #make new table that has the row information for the 'other' category
+         Other <- data.frame("Other", other, otherP)
+         colnames(Other)[1] <- "Facility"
+         
+         #Now combine the table with the top five and addedlast row for 'other'
+         Piedata2 <- rbind(Piedata, Other)
+         
+   
      
+     #Plot Pie Chart
+     colors <- c('rgb(211,94,96)', 'rgb(128,133,133)', 'rgb(144,103,167)', 'rgb(171,104,87)', 'rgb(114,147,203)')
      
+     INpie<- plot_ly(Piedata2, labels = Piedata2$Facility , values = Piedata2$Percent, type = 'pie',
+                   textinfo = 'label+percent',
+                   insidetextfont = list(color = '#FFFFFF'),
+                   marker = list(colors = colors,
+                                 line = list(color = '#FFFFFF', width = 1)),
+                   showlegend = TRUE) %>%
+       layout(title = "Total Water Use by Facility",
+              xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+              yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+     print(INpie)
+       })
+     })
      
 #2d.Spatial Trends: Map trends tab Water use
      #I used a leaflet to create the cholorpleth. 
@@ -1047,6 +1103,7 @@ setwd("C:/Users/NicolaHill/Documents/GitHub/USIndustrialWater")
                 legend.text = element_text(size = 16),
                 plot.title = element_text(size = 22, face = "bold"),
                 plot.caption= element_text(size=14))
+          
         print(INproj)
         
       })
