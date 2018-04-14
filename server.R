@@ -505,7 +505,7 @@ setwd("C:/Users/NicolaHill/Documents/GitHub/USIndustrialWater")
        
        output$Pie <- renderPlotly({ 
          #Organize data
-         NAICSGroupNC<- NC %>% 
+         NAICSGroupNC<- passData() %>% 
            dplyr::group_by(NewSubType) %>%
            dplyr::summarise(TotalWaterUseMG = sum(monthlyWaterUseMG, na.rm = TRUE )) %>% 
            dplyr:: mutate(Percent = round(TotalWaterUseMG/ sum(TotalWaterUseMG)*100)) %>% 
