@@ -11,14 +11,12 @@ library(maps)
 library(leaflet)
 library(plotly)
 library(markdown)
-#library(sp)
 library(sf)
 library(DT)
 library(lettercase)
 library(stringi)
 library(tigris)
-
-
+library(treemap)
 
 
 
@@ -87,50 +85,51 @@ shinyUI(fluidPage(
 
 
 #Add Radio Buttons ------
-#Temporal Trends Tab-----
-conditionalPanel(
-  condition = "input.tabSelected == 'trends'",
-  radioButtons(
-    inputId = "WaterType",
-    label = "Choose Type of Water",
-    choices = list(
-      "All" = "All",
-      "Surface Water" = "SurfaceWater",
-      "Groundwater" = "Groundwater",
-      "Reuse Water" = "Reuse"
-    )
-  ),
-  conditionalPanel(
-    condition = "input.tabSelected=='trends' & input.WaterType== 'All'
-    & (input.state == 'Texas'|input.state == 'Indiana') ",
-    checkboxInput("USGS", "USGS Data", FALSE)
-  )
-),
+    #Temporal Trends Tab-----
+      conditionalPanel(
+        condition = "input.tabSelected == 'trends'",
+        radioButtons(
+          inputId = "WaterType",
+          label = "Choose Type of Water",
+          choices = list(
+            "All" = "All",
+            "Surface Water" = "SurfaceWater",
+            "Groundwater" = "Groundwater",
+            "Reuse Water" = "Reuse"
+          )
+        ),
+        conditionalPanel(
+          condition = "input.tabSelected=='trends' & input.WaterType== 'All'
+          & (input.state == 'Texas'|input.state == 'Indiana') ",
+          checkboxInput("USGS", "USGS Data", FALSE)
+        )
+      ),
 
-#spatial Trends Tab-----
-conditionalPanel(
-  condition = "input.tabSelected == 'Map'& (input.state == 'Texas'|
-  input.state == 'NorthCarolina'|input.state == 'Indiana') " ,
-  radioButtons(
-    inputId = "FacWater",
-    label = "Show distrbution of:",
-    choices = list("Industrial Water Use" = "wateruse",
-                   "Facilities" = "facilities")
-  )
-),
 
-#Largest User Trends Tab----
-conditionalPanel(
-  condition = "input.tabSelected == 'table'",
-  radioButtons(
-    inputId = "tablePie",
-    label = "Show:",
-    choices = list(
-      "Largest Users List" = "Table",
-      "Largest Users by Percent" = "Pie"
-    )
-  )
-  ),
+    #spatial Trends Tab-----
+      conditionalPanel(
+        condition = "input.tabSelected == 'Map'& (input.state == 'Texas'|
+        input.state == 'NorthCarolina'|input.state == 'Indiana') " ,
+        radioButtons(
+          inputId = "FacWater",
+          label = "Show distrbution of:",
+          choices = list("Industrial Water Use" = "wateruse",
+                         "Facilities" = "facilities")
+        )
+      ),
+    
+    #Largest User Trends Tab----
+      conditionalPanel(
+        condition = "input.tabSelected == 'table'",
+        radioButtons(
+          inputId = "tablePie",
+          label = "Show:",
+          choices = list(
+            "Largest Users List" = "Table",
+            "Largest Users by Percent" = "Pie"
+          )
+        )
+        ),
 
 
 
@@ -211,7 +210,7 @@ mainPanel(
         tabPanel(
           "Largest NAICS Categories",
           value = "Pie",
-          plotlyOutput("Pie", width = "100%", height = "560px")
+          plotOutput("Pie", width = "100%", height = "560px")
         )
     )
   ),
