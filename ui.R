@@ -16,7 +16,7 @@ library(DT)
 library(lettercase)
 library(stringi)
 library(tigris)
-library(treemap)
+
 
 
 
