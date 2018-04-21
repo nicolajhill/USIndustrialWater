@@ -1,6 +1,6 @@
 #Nicola Hill
 #This script is the user interface (ui) portion of the web application.
-#The script loads appropriate files/packages and sets up the side bar and tabes
+#The script loads appropriate files/packages and sets up the side bar and tabs
 
 
 #1. Connect Online-----
