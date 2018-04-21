@@ -19,7 +19,6 @@
       load(".RData")
 
 #data prep
-#setwd("Z:/Working3_18/Working3_18")
 setwd("C:/Users/NicolaHill/Documents/GitHub/USIndustrialWater")
 
 #data prep-----
