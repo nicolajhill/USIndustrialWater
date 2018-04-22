@@ -1,4 +1,4 @@
-
+#
 #This is the server side of the Shiny app- so when a user clicks
     #on a tab, or selects a button, this script says how it reacts
 
@@ -19,7 +19,7 @@
       load(".RData")
 
 #data prep
-setwd("C:/Users/NicolaHill/Documents/GitHub/USIndustrialWater")
+#setwd("C:/Users/NicolaHill/Documents/GitHub/USIndustrialWater")
 
 #data prep-----
     #Texas
