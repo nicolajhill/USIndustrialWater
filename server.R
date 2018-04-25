@@ -15,11 +15,7 @@
     #2e. Temporal Trend: Write a few line for summary tab
     #2f. Projections: load ggplot of projections for each state
 
-#1. Load data .Rdatafile?----
-      load(".RData")
-
-#data prep
-#setwd("C:/Users/NicolaHill/Documents/GitHub/USIndustrialWater")
+#1. 
 
 #data prep-----
     #Texas
