@@ -16,7 +16,7 @@
     #2f. Projections: load ggplot of projections for each state
 
 #1. 
-
+runGitHub( "USIndustrialWater", "nicolajhill")
 #data prep-----
     #Texas
     TX<- read.csv("TexasData.csv")
